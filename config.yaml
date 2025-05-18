@@ -3,7 +3,7 @@ name: Duplicati
 version: 0.0.1
 slug: duplicati
 description: Zero-trust backup from any operating system to any destination that you can manage from anywhere.
-url: https://github.com/echocat/hassos-addons/duplicati
+url: https://github.com/echocat/hassos-addon-duplicati
 #image: ghcr.io/echocat/hassos-addons/duplicati
 advanced: true
 startup: application

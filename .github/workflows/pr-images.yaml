@@ -45,12 +45,11 @@ jobs:
 
       - name: Execute
         id: refs
-        working-directory: build
         run: |
           set -ex
           
           function hasLabel() {
-            go run . has-pr-label "${GITHUB_PR_ID}" "${LABEL_NAME}" && return 0 || retVal=$?
+            go run ./build has-pr-label "${GITHUB_PR_ID}" "${LABEL_NAME}" && return 0 || retVal=$?
             if [ "$retVal" -eq 1 ]; then
               return 1
             fi
@@ -58,7 +57,7 @@ jobs:
           }
           
           function isOpen() {
-            go run . is-pr-open "${GITHUB_PR_ID}" && return 0 || retVal=$?
+            go run ./build is-pr-open "${GITHUB_PR_ID}" && return 0 || retVal=$?
             if [ "$retVal" -eq 1 ]; then
               return 1
             fi
@@ -66,11 +65,11 @@ jobs:
           }
           
           function triggerCiWorkflow() {
-            go run . rerun-pr-workflow "${GITHUB_PR_ID}" "${WORKFLOW_CI_FN}"
+            go run ./build rerun-pr-workflow "${GITHUB_PR_ID}" "${WORKFLOW_CI_FN}"
           }
           
           function removeImages() {
-            go run . delete-image-tag "pr-${GITHUB_PR_ID}"
+            go run ./build delete-image-tag "pr-${GITHUB_PR_ID}"
           }
           
           if [ "$GITHUB_EVENT_ACTION" == "labeled" ]; then

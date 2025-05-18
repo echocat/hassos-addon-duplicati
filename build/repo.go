@@ -13,6 +13,7 @@ func newRepo() (repo, error) {
 		packages: newPackages(),
 		prs:      newPrs(),
 		actions:  newActions(),
+		meta:     newMeta(),
 	}
 	if v, ok := os.LookupEnv("GITHUB_OWNER_TYPE"); ok {
 		if err := result.ownerType.Set(v); err != nil {
@@ -44,14 +45,25 @@ func newRepo() (repo, error) {
 	return result, nil
 }
 
-func (this *repo) init(b *build, fs *flag.FlagSet) {
+func (this *repo) init(b *build, fs *flag.FlagSet) error {
 	this.build = b
 	fs.Var(&this.ownerType, "ownerType", "Can be either 'user' or 'org'")
 	fs.Var(&this.owner, "owner", "")
 	fs.Var(&this.name, "repo", "")
-	this.packages.init(b, fs)
-	this.prs.init(b, fs)
-	this.actions.init(b, fs)
+	fs.StringVar(&this.registry, "registry", "ghcr.io", "")
+	if err := this.packages.init(b, fs); err != nil {
+		return err
+	}
+	if err := this.prs.init(b, fs); err != nil {
+		return err
+	}
+	if err := this.actions.init(b, fs); err != nil {
+		return err
+	}
+	if err := this.meta.init(b, fs); err != nil {
+		return err
+	}
+	return nil
 }
 
 func (this *repo) Validate() error {
@@ -73,6 +85,9 @@ func (this *repo) Validate() error {
 	if err := this.actions.Validate(); err != nil {
 		return err
 	}
+	if err := this.meta.Validate(); err != nil {
+		return err
+	}
 	return nil
 }
 
@@ -83,13 +98,20 @@ type repo struct {
 	owner     owner
 	name      repoName
 
+	registry string
+
 	packages packages
 	prs      prs
 	actions  actions
+	meta     meta
+}
+
+func (this repo) Bare() string {
+	return fmt.Sprintf("%s/%s", this.owner, this.name)
 }
 
 func (this repo) String() string {
-	return fmt.Sprintf("%v:%s/%s", this.ownerType, this.owner, this.name)
+	return fmt.Sprintf("%v:%s", this.ownerType, this.Bare())
 }
 
 type ownerType uint8

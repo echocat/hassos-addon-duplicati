@@ -20,7 +20,10 @@ func main() {
 
 	fs := flag.NewFlagSet(os.Args[0], flag.ExitOnError)
 	fs.Usage = func() { b.flagUsage(fs, "") }
-	b.init(fs)
+	if err := b.init(fs); err != nil {
+		b.flagUsage(fs, "ERROR: %v", err)
+		os.Exit(3)
+	}
 
 	_ = fs.Parse(os.Args[1:])
 

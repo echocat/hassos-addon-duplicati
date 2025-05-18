@@ -6,6 +6,7 @@ require (
 	github.com/echocat/slf4g v1.6.3
 	github.com/echocat/slf4g/native v1.6.3
 	github.com/google/go-github/v65 v65.0.0
+	gopkg.in/yaml.v3 v3.0.1
 )
 
 require (

@@ -48,43 +48,10 @@ jobs:
 
       - name: Execute
         id: refs
-        working-directory: build
         run: |
           set -e
-          function hasLabel() {
-            go run . has-pr-label "${1}" "${TEST_IMAGE_LABEL_NAME}" && return 0 || retVal=$?
-            if [ "$retVal" -eq 1 ]; then
-              return 1
-            fi
-            exit $retVal
-          }
-          
-          registry="${{ env.REGISTRY }}"
-          if [ "${{ github.event_name }}" == "pull_request" ]; then
-            imageTag="pr-${{ github.event.number }}"
-          else
-            imageTag="$(echo "${{ github.ref_name }}" | sed -E "s/^v([0-9]+(\.[0-9]+)*)(-.+)?$/\1/")"
-          fi
-          image="${registry}/${{ github.repository }}"
 
-          if [ "${{ github.event_name }}" == "release" ]; then
-            push="true"
-          elif [ "${{ github.event_name }}" == "pull_request" ] && hasLabel "${{ github.event.number }}"; then
-            push="true"
-          else
-            push="false"
-          fi
-
-          echo "registry=${registry}" >> "$GITHUB_OUTPUT"
-          echo "image=${image}" >> "$GITHUB_OUTPUT"
-          echo "imageTag=${imageTag}" >> "$GITHUB_OUTPUT"
-          echo "push=${push}" >> "$GITHUB_OUTPUT"
-
-          echo "## Task information" >> "$GITHUB_STEP_SUMMARY"
-          echo "| Name | Value |" >> "$GITHUB_STEP_SUMMARY"
-          echo "| - | - |" >> "$GITHUB_STEP_SUMMARY"
-          echo "| Image | \`${image}\` |" >> "$GITHUB_STEP_SUMMARY"
-          echo "| Should push | \`${push}\` |" >> "$GITHUB_STEP_SUMMARY"
+          go run ./build resolve "${{ github.ref_name }}" "${{ github.event_name }}" "${{ github.event.number }}" 
 
   build:
     runs-on: ubuntu-latest
@@ -93,10 +60,7 @@ jobs:
       - resolve
     strategy:
       matrix:
-        platform:
-          - linux/amd64
-          - linux/arm64
-          - linux/arm/v7
+        platform:  ${{ fromJson(steps.refs.outputs.platforms) }}
     permissions:
       pull-requests: read
       contents: read
