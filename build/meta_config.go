@@ -54,7 +54,9 @@ func haArchToOciArch(in string) string {
 	case "aarch64":
 		return "arm64"
 	case "armv7":
-		return "armv7"
+		return "arm/v7"
+	case "armv6":
+		return "arm/v6"
 	default:
 		return in
 	}
