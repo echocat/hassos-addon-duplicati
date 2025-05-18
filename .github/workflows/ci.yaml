@@ -41,14 +41,14 @@ jobs:
       - name: Install Go
         uses: actions/setup-go@v5
         with:
-          go-version-file: .build/go.mod
+          go-version-file: go.mod
           check-latest: true
           cache-dependency-path: |
-            .build/go.sum
+            go.sum
 
       - name: Execute
         id: refs
-        working-directory: .build
+        working-directory: build
         run: |
           set -e
           function hasLabel() {
@@ -108,7 +108,7 @@ jobs:
 
       - name: Prepare
         id: refs
-        working-directory: .build
+        working-directory: build
         run: |
           set -e
           platform="${{ matrix.platform }}"
