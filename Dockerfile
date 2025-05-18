@@ -1,17 +1,17 @@
 # syntax=docker/dockerfile:1.4
-FROM golang:1.24-alpine AS build
+FROM --platform=$BUILDPLATFORM golang:1.24-alpine AS build
 
 ARG TARGETOS="linux" \
   TARGETARCH="arm64"
-COPY . /src
-WORKDIR /src
 
-RUN GOOS=$TARGETOS GOARCH=$TARGETARCH go build -o /out/wrapper ./wrapper
-#RUN --mount=target=. \
-#    --mount=type=cache,target=/root/.cache/go-build \
-#    --mount=type=cache,target=/go/pkg \
-#    pwd && echo "----" && ls -la && \
-#    GOOS=$TARGETOS GOARCH=$TARGETARCH go build -o /out/wrapper ./wrapper
+WORKDIR /src
+COPY . .
+
+RUN --mount=target=. \
+    --mount=type=cache,target=/root/.cache/go-build \
+    --mount=type=cache,target=/go/pkg \
+    pwd && echo "----" && ls -la && \
+    GOOS=$TARGETOS GOARCH=$TARGETARCH go build -o /out/wrapper ./wrapper
 
 FROM debian:bookworm AS image
 
