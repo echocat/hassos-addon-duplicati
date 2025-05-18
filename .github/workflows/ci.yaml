@@ -60,7 +60,7 @@ jobs:
       - resolve
     strategy:
       matrix:
-        platform:  ${{ fromJson(steps.refs.outputs.platforms) }}
+        platform:  ${{ fromJson(needs.resolve.outputs.platforms) }}
     permissions:
       pull-requests: read
       contents: read
