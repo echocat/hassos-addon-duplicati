@@ -125,22 +125,27 @@ func (this *meta) resolve(ctx context.Context, args []string) error {
 		licStr = lic.GetName()
 	}
 
-	if err := this.build.appendToResolveOutput("" +
-		recordln("registry", this.build.registry) +
-		recordln("image", image) +
-		recordln("imageTag", imageTag) +
-		recordln("push", push) +
-		recordln("platforms", string(paltformsB)) +
-		recordmln("annotations", ""+
-			recordln("org.opencontainers.image.url", this.build.repo.Url())+
-			recordln("org.opencontainers.image.source", this.build.repo.Url())+
-			recordln("org.opencontainers.image.description", repoMeta.GetDescription())+
-			recordln("org.opencontainers.image.created", time.Now().Format(time.RFC3339))+
-			recordln("org.opencontainers.image.title", this.metaConfig.Name)+
-			recordln("org.opencontainers.image.version", imageTag)+
-			recordln("org.opencontainers.image.licenses", licStr),
-		),
-	); err != nil {
+	annotations, err := mlnRecord(map[string]any{
+		"org.opencontainers.image.url":         this.build.repo.Url(),
+		"org.opencontainers.image.source":      this.build.repo.Url(),
+		"org.opencontainers.image.description": repoMeta.GetDescription(),
+		"org.opencontainers.image.created":     time.Now().Format(time.RFC3339),
+		"org.opencontainers.image.title":       this.metaConfig.Name,
+		"org.opencontainers.image.version":     imageTag,
+		"org.opencontainers.image.licenses":    licStr,
+	})
+	if err != nil {
+		return err
+	}
+
+	if err := this.build.appendToResolveOutput(map[string]string{
+		"registry":    this.build.registry,
+		"image":       image,
+		"imageTag":    imageTag,
+		"push":        push,
+		"platforms":   string(paltformsB),
+		"annotations": annotations,
+	}); err != nil {
 		return err
 	}
 	if err := this.build.appendToSummaryOutput("" +
@@ -170,19 +175,24 @@ func (this *meta) resolveBuild(_ context.Context, args []string) error {
 
 	imageTag, image := this.resolveImage(eventName, eventNumber, refName)
 
-	if err := this.build.appendToResolveOutput("" +
-		recordln("image", image) +
-		recordln("imageTag", imageTag) +
-		recordln("platformToken", strings.ReplaceAll(platform, "/", "-")) +
-		recordmln("labels", ""+
-			recordln("io.hass.type", "addon")+
-			recordln("io.hass.version", imageTag)+
-			recordln("io.hass.arch", ociPlatformToHaArch(platform))+
-			recordln("io.hass.name", this.metaConfig.Name)+
-			recordln("io.hass.description", this.metaConfig.Description)+
-			recordln("io.hass.url", this.build.repo.Url()),
-		),
-	); err != nil {
+	labels, err := mlnRecord(map[string]any{
+		"io.hass.type":        "addon",
+		"io.hass.version":     imageTag,
+		"io.hass.arch":        ociPlatformToHaArch(platform),
+		"io.hass.name":        this.metaConfig.Name,
+		"io.hass.description": this.metaConfig.Description,
+		"io.hass.url":         this.build.repo.Url(),
+	})
+	if err != nil {
+		return err
+	}
+
+	if err := this.build.appendToResolveOutput(map[string]string{
+		"image":         image,
+		"imageTag":      imageTag,
+		"platformToken": strings.ReplaceAll(platform, "/", "-"),
+		"labels":        labels,
+	}); err != nil {
 		return err
 	}
 
