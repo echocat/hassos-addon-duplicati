@@ -116,7 +116,7 @@ jobs:
           platforms: ${{ matrix.platform }}
           labels: ${{ steps.meta.outputs.labels }}
           build-args: |
-            DUPLICATI_RELEASE=${{ steps.meta.outputs.duplicatRelease }}
+            DUPLICATI_RELEASE=${{ needs.resolve.outputs.duplicatRelease }}
           outputs: "type=image,name=${{ needs.resolve.outputs.image }},push-by-digest=${{ needs.resolve.outputs.push }},name-canonical=true,push=${{ needs.resolve.outputs.push }}"
 
       - name: Export image digest
