@@ -88,7 +88,7 @@ func (this *build) flagUsage(fs *flag.FlagSet, reasonMsg string, args ...any) {
 	fs.PrintDefaults()
 }
 
-func (this *build) appendTo(fn, fnType, msg string, args ...any) error {
+func (this *build) appendTo(fn, fnType, msg string) error {
 	_ = os.MkdirAll(filepath.Dir(fn), 0755)
 	f, err := os.OpenFile(fn, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
 	if err != nil {
@@ -97,7 +97,7 @@ func (this *build) appendTo(fn, fnType, msg string, args ...any) error {
 	defer func() {
 		_ = f.Close()
 	}()
-	if _, err := fmt.Fprintf(f, msg, args...); err != nil {
+	if _, err := f.WriteString(msg); err != nil {
 		return fmt.Errorf("cannot write %s file %q: %w", fnType, fn, err)
 	}
 
@@ -110,10 +110,10 @@ func (this *build) appendTo(fn, fnType, msg string, args ...any) error {
 
 	return nil
 }
-func (this *build) appendToResolveOutput(msg string, args ...any) error {
-	return this.appendTo(this.resolveOutput, "resolve output", msg, args...)
+func (this *build) appendToResolveOutput(msg string) error {
+	return this.appendTo(this.resolveOutput, "resolve output", msg)
 }
 
-func (this *build) appendToSummaryOutput(msg string, args ...any) error {
-	return this.appendTo(this.summaryOutput, "summary output", msg, args...)
+func (this *build) appendToSummaryOutput(msg string) error {
+	return this.appendTo(this.summaryOutput, "summary output", msg)
 }
