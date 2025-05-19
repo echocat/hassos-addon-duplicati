@@ -26,6 +26,46 @@ concurrency:
   group: ${{ github.workflow }}-${{github.ref}}
 
 jobs:
+  foo:
+    runs-on: ubuntu-latest
+    name: "Foo"
+    steps:
+      - name: Check out this repository
+        uses: actions/checkout@v4
+        with:
+          path: this
+
+      - name: Check out hassos-addons repository
+        uses: actions/checkout@v4
+        with:
+          path: hassos-addons
+          token: ${{ secrets.HASSOS_ADDONS_REPO }}
+
+      - name: Adjust hassos-addons
+        env:
+          PROJECT: duplicati
+        run: |
+          set -ex
+          mkdir -p "$GITHUB_WORKSPACE/hassos-addons/${PROJECT}"
+          cp "$GITHUB_WORKSPACE/this/config.yaml" "$GITHUB_WORKSPACE/hassos-addons/${PROJECT}/config.yaml"
+          cp "$GITHUB_WORKSPACE/this/DOCS.md" "$GITHUB_WORKSPACE/hassos-addons/${PROJECT}/DOCS.md"
+          cp "$GITHUB_WORKSPACE/this/ENTRY.md" "$GITHUB_WORKSPACE/hassos-addons/${PROJECT}/README.md"
+          cp "$GITHUB_WORKSPACE/hassos-addons/"
+          ref=$(echo "${{ github.ref_name }}" | sed -E "s/^v([0-9]+(\.[0-9]+)*)(-.+)?$/\1/")
+          sed -i -E "s/^(version: ).+$/\1${ref}/" "${PROJECT}/config.yaml"
+          if grep -q '^image: ' config.yaml; then
+            sed -i -E "s/^(image: ).+$/\1ghcr.io/echocat/hassos-addon-duplicati/" "${PROJECT}/config.yaml"
+          else
+            echo "image: ghcr.io/echocat/hassos-addon-duplicati" >> "${PROJECT}/config.yaml"
+          fi
+          git add "${PROJECT}/config.yaml"
+          git add "${PROJECT}/DOCS.md"
+          git add "${PROJECT}/README.md"
+          git config --local user.email "github-actions[bot]@users.noreply.github.com"
+          git config --local user.name "github-actions[bot]"
+          git commit -m "Release announcement of ${PROJECT}:${ref}"
+          git push origin main
+
   resolve:
     runs-on: ubuntu-latest
     name: "Resolve"
