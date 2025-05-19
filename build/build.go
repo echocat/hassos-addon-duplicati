@@ -8,6 +8,7 @@ import (
 	"path/filepath"
 	"time"
 
+	log "github.com/echocat/slf4g"
 	"github.com/google/go-github/v65/github"
 )
 
@@ -97,6 +98,10 @@ func (this *build) appendTo(fn, fnType, msg string, args ...any) error {
 	defer func() {
 		_ = f.Close()
 	}()
+	content := fmt.Sprintf(msg, args...)
+	log.With("content", content).
+		With("fn", fn).
+		Info("Append content...")
 	if _, err := fmt.Fprintf(f, msg, args...); err != nil {
 		return fmt.Errorf("cannot write %s file %q: %w", fnType, fn, err)
 	}
