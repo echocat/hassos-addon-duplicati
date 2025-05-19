@@ -81,7 +81,15 @@ jobs:
 
       - name: Prepare
         id: refs
-        run: go run ./build resolve-build "${{ matrix.platform }}" "${{ github.ref_name }}" "${{ github.event_name }}" "${{ github.event.number }}"
+        run: |
+          env
+          echo "------"
+          echo "------"
+          echo "------"
+          echo "------"
+          echo "------"
+          echo "------"
+          go run ./build resolve-build "${{ matrix.platform }}" "${{ github.ref_name }}" "${{ github.event_name }}" "${{ github.event.number }}"
 
       - name: Docker meta
         id: meta
