@@ -46,6 +46,8 @@ jobs:
           PROJECT: duplicati
         run: |
           set -ex
+          cd "$GITHUB_WORKSPACE/hassos-addons"
+
           source=$GITHUB_WORKSPACE/this
           target=$GITHUB_WORKSPACE/hassos-addons/${PROJECT}
           mkdir -p "${target}"
@@ -63,6 +65,7 @@ jobs:
           else
             echo "image: ghcr.io/echocat/hassos-addon-duplicati" >> "${target}/config.yaml"
           fi
+          
           git add "${target}/config.yaml"
           git add "${target}/DOCS.md"
           git add "${target}/README.md"
