@@ -30,11 +30,12 @@ jobs:
     runs-on: ubuntu-latest
     name: "Resolve"
     outputs:
-      registry: "${{ steps.refs.outputs.registry }}"
-      image: "${{ steps.refs.outputs.image }}"
-      imageTag: "${{ steps.refs.outputs.imageTag }}"
-      push: "${{ steps.refs.outputs.push }}"
-      platforms: "${{ steps.refs.outputs.platforms }}"
+      registry: ${{ steps.refs.outputs.registry }}
+      image: ${{ steps.refs.outputs.image }}
+      imageTag: ${{ steps.refs.outputs.imageTag }}
+      push: ${{ steps.refs.outputs.push }}
+      platforms: ${{ steps.refs.outputs.platforms }}
+      annotations: ${{ steps.refs.outputs.annotations }}
     steps:
       - name: Check out repository
         uses: actions/checkout@v4
@@ -49,10 +50,7 @@ jobs:
 
       - name: Execute
         id: refs
-        run: |
-          set -e
-
-          go run ./build resolve "${{ github.ref_name }}" "${{ github.event_name }}" "${{ github.event.number }}" 
+        run: go run ./build resolve "${{ github.ref_name }}" "${{ github.event_name }}" "${{ github.event.number }}"
 
   build:
     runs-on: ubuntu-latest
@@ -71,20 +69,24 @@ jobs:
       - name: Check out repository
         uses: actions/checkout@v4
 
+      - name: Install Go
+        uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+          check-latest: true
+          cache-dependency-path: |
+            go.sum
+
       - name: Prepare
         id: refs
-        working-directory: build
-        run: |
-          set -e
-          platform="${{ matrix.platform }}"
-          echo "platformPair=${platform//\//-}" >> "$GITHUB_OUTPUT"
-          echo "labels=${{ steps.meta.outputs.labels }}" >> "$GITHUB_OUTPUT"
+        run: go run ./build resolve-build "${{ matrix.platform }}" "${{ github.ref_name }}" "${{ github.event_name }}" "${{ github.event.number }}"
 
       - name: Docker meta
         id: meta
         uses: docker/metadata-action@v5
         with:
-          images: "${{ steps.refs.outputs.image }}"
+          images: ${{ steps.refs.outputs.image }}
+          labels: ${{ steps.refs.outputs.labels }}
           tags: |
             type=sha
             type=ref,event=pr
@@ -100,17 +102,17 @@ jobs:
       - name: Log in to the Container registry
         uses: docker/login-action@v3
         with:
-          registry: "${{ needs.resolve.outputs.registry }}"
-          username: "${{ github.actor }}"
-          password: "${{ secrets.GITHUB_TOKEN }}"
+          registry: ${{ needs.resolve.outputs.registry }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Build image
         id: build
         uses: docker/build-push-action@v6
         with:
           context: "."
-          platforms: "${{ matrix.platform }}"
-          labels: "${{ steps.meta.outputs.labels }}"
+          platforms: ${{ matrix.platform }}
+          labels: ${{ steps.meta.outputs.labels }}
           outputs: "type=image,name=${{ needs.resolve.outputs.image }},push-by-digest=${{ needs.resolve.outputs.push }},name-canonical=true,push=${{ needs.resolve.outputs.push }}"
 
       - name: Export image digest
@@ -124,7 +126,7 @@ jobs:
         if: needs.resolve.outputs.push == 'true'
         uses: actions/upload-artifact@v4
         with:
-          name: digests-${{ steps.refs.outputs.platformPair }}
+          name: digests-${{ steps.refs.outputs.platformToken }}
           path: "${{ runner.temp }}/digests/*"
           if-no-files-found: error
           retention-days: 1
@@ -152,6 +154,7 @@ jobs:
         uses: docker/metadata-action@v5
         with:
           images: ${{ needs.resolve.outputs.image }}
+          annotations: ${{ needs.resolve.outputs.annotations }}
           tags: |
             type=sha
             type=ref,event=pr
@@ -161,9 +164,9 @@ jobs:
       - name: Login to Docker Hub
         uses: docker/login-action@v3
         with:
-          registry: "${{ needs.resolve.outputs.registry }}"
-          username: "${{ github.actor }}"
-          password: "${{ secrets.GITHUB_TOKEN }}"
+          registry: ${{ needs.resolve.outputs.registry }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Create manifest list and push
         working-directory: "${{ runner.temp }}/digests"
@@ -173,7 +176,7 @@ jobs:
 
       - name: Inspect image
         run: |
-          docker buildx imagetools inspect ${{ needs.resolve.outputs.image }}:${{ steps.meta.outputs.version }}    
+          docker buildx imagetools inspect ${{ needs.resolve.outputs.image }}:${{ steps.meta.outputs.version }}
 
   announce:
     name: Announce changes

@@ -1,11 +1,14 @@
 package main
 
 import (
+	"context"
 	"flag"
 	"fmt"
 	"os"
 	"regexp"
 	"strings"
+
+	"github.com/google/go-github/v65/github"
 )
 
 func newRepo() (repo, error) {
@@ -112,6 +115,14 @@ func (this repo) Bare() string {
 
 func (this repo) String() string {
 	return fmt.Sprintf("%v:%s", this.ownerType, this.Bare())
+}
+
+func (this repo) getMeta(ctx context.Context) (*github.Repository, error) {
+	v, _, err := this.build.client.Repositories.Get(ctx, this.owner.String(), this.name.String())
+	if err != nil {
+		return nil, fmt.Errorf("unable to get metadata for repo %s: %w", this.Bare(), err)
+	}
+	return v, nil
 }
 
 type ownerType uint8

@@ -10,10 +10,11 @@ import (
 )
 
 type metaConfig struct {
-	Name string   `json:"name,omitempty"`
-	Slug string   `json:"slug,omitempty"`
-	Url  string   `json:"url,omitempty"`
-	Arch []string `json:"arch,omitempty"`
+	Name        string   `json:"name,omitempty"`
+	Description string   `json:"description,omitempty"`
+	Slug        string   `json:"slug,omitempty"`
+	Url         string   `json:"url,omitempty"`
+	Arch        []string `json:"arch,omitempty"`
 }
 
 func (this *metaConfig) read(in io.Reader) error {
@@ -64,4 +65,27 @@ func haArchToOciArch(in string) string {
 
 func haArchToOciPlatform(in string) string {
 	return "linux/" + haArchToOciArch(in)
+}
+
+func ociArchToHaArch(in string) string {
+	switch strings.ToLower(in) {
+	case "amd64":
+		return "amd64"
+	case "arm64":
+		return "aarch64"
+	case "arm/v7":
+		return "armv7"
+	case "arm/v6":
+		return "armv6"
+	default:
+		return in
+	}
+}
+
+func ociPlatformToHaArch(in string) string {
+	ps := strings.SplitN(in, "/", 2)
+	if len(ps) != 2 {
+		return "UNKNOWN_OCI_PLATFORM"
+	}
+	return ociArchToHaArch(ps[1])
 }
