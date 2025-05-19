@@ -38,7 +38,7 @@ func (this *metaConfig) readFromFile(fn string) error {
 }
 
 func (this *metaConfig) readFromDefault() error {
-	return this.readFromFile("config.yaml")
+	return this.readFromFile("config/config.yaml")
 }
 
 func (this *metaConfig) platforms() ([]string, error) {
