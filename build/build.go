@@ -8,7 +8,6 @@ import (
 	"path/filepath"
 	"time"
 
-	log "github.com/echocat/slf4g"
 	"github.com/google/go-github/v65/github"
 )
 
@@ -98,13 +97,17 @@ func (this *build) appendTo(fn, fnType, msg string, args ...any) error {
 	defer func() {
 		_ = f.Close()
 	}()
-	content := fmt.Sprintf(msg, args...)
-	log.With("content", content).
-		With("fn", fn).
-		Info("Append content...")
 	if _, err := fmt.Fprintf(f, msg, args...); err != nil {
 		return fmt.Errorf("cannot write %s file %q: %w", fnType, fn, err)
 	}
+
+	_ = f.Close()
+	content, err := os.ReadFile(fn)
+	if err != nil {
+		return fmt.Errorf("cannot read %s file %q: %w", fnType, fn, err)
+	}
+	fmt.Printf("+++ Content of %q+++\n%s\n--- Content of %q---\n", fn, string(content), fn)
+
 	return nil
 }
 func (this *build) appendToResolveOutput(msg string, args ...any) error {
