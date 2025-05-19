@@ -131,15 +131,15 @@ func (this *meta) resolve(ctx context.Context, args []string) error {
 		"imageTag=" + imageTag + "\n" +
 		"push=" + push + "\n" +
 		"platforms=" + string(paltformsB) + "\n" +
-		"echo 'annotations<<EOF'\n" +
-		"echo 'org.opencontainers.image.url=\"https://github.com/" + this.build.repo.Bare() + "\"'\n" +
-		"echo 'org.opencontainers.image.source=\"https://github.com/" + this.build.repo.Bare() + "\"'\n" +
-		"echo 'org.opencontainers.image.description=" + strconv.Quote(repoMeta.GetDescription()) + "'\n" +
-		"echo 'org.opencontainers.image.created=\"" + time.Now().Format(time.RFC3339) + "\"'\n" +
-		"echo 'org.opencontainers.image.title=" + strconv.Quote(this.metaConfig.Name) + "'\n" +
-		"echo 'org.opencontainers.image.version=" + strconv.Quote(imageTag) + "'\n" +
-		"echo 'org.opencontainers.image.licenses=" + strconv.Quote(licStr) + "'\n" +
-		"echo 'EOF'\n",
+		"annotations<<EOF\n" +
+		"org.opencontainers.image.url=\"https://github.com/" + this.build.repo.Bare() + "\"\n" +
+		"org.opencontainers.image.source=\"https://github.com/" + this.build.repo.Bare() + "\"\n" +
+		"org.opencontainers.image.description=" + strconv.Quote(repoMeta.GetDescription()) + "\n" +
+		"org.opencontainers.image.created=\"" + time.Now().Format(time.RFC3339) + "\"\n" +
+		"org.opencontainers.image.title=" + strconv.Quote(this.metaConfig.Name) + "\n" +
+		"org.opencontainers.image.version=" + strconv.Quote(imageTag) + "\n" +
+		"org.opencontainers.image.licenses=" + strconv.Quote(licStr) + "\n" +
+		"EOF\n",
 	); err != nil {
 		return err
 	}
@@ -173,14 +173,14 @@ func (this *meta) resolveBuild(_ context.Context, args []string) error {
 		"image=" + image + "\n" +
 		"imageTag=" + imageTag + "\n" +
 		"platformToken=" + strings.ReplaceAll(platform, "/", "-") + "\n" +
-		"echo \"labels<<EOF\"\n" +
-		"echo 'io.hass.type=\"addon\"'\n" +
-		"echo 'io.hass.version=" + strconv.Quote(imageTag) + "'\n" +
-		"echo 'io.hass.arch=\"" + ociPlatformToHaArch(platform) + "\"'\n" +
-		"echo 'io.hass.name=" + strconv.Quote(this.metaConfig.Name) + "'\n" +
-		"echo 'io.hass.description=" + strconv.Quote(this.metaConfig.Description) + "'\n" +
-		"echo 'io.hass.url=\"https://github.com/" + this.build.repo.Bare() + "\"'\n" +
-		"echo \"EOF\"\n",
+		"labels<<EOF\"\n" +
+		"io.hass.type=\"addon\"\n" +
+		"io.hass.version=" + strconv.Quote(imageTag) + "\n" +
+		"io.hass.arch=\"" + ociPlatformToHaArch(platform) + "\"\n" +
+		"io.hass.name=" + strconv.Quote(this.metaConfig.Name) + "\n" +
+		"io.hass.description=" + strconv.Quote(this.metaConfig.Description) + "\n" +
+		"io.hass.url=\"https://github.com/" + this.build.repo.Bare() + "\"\n" +
+		"EOF\n",
 	); err != nil {
 		return err
 	}
