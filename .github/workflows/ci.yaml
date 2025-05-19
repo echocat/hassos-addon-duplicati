@@ -53,8 +53,7 @@ jobs:
           source=$GITHUB_WORKSPACE/this
           target=$GITHUB_WORKSPACE/hassos-addons/${PROJECT}
           rm -rf "${target}"
-          cp -R "${source}/" "${target}/"
-          ls -la "${target}"
+          cp -R "${source}/config/" "${target}/"
           ref=$(echo "${{ github.ref_name }}" | sed -E "s/^v([0-9]+(\.[0-9]+)*)(-.+)?$/\1/")
           refEscaped=$(echo "$ref" | sed -E 's/\\/\\\\/' | sed -E 's/\//\\\//')
           sed -i -E "s/^(version: ).+$/\1${refEscaped}/" "${target}/config.yaml"
