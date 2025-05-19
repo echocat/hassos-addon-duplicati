@@ -48,7 +48,7 @@ jobs:
           set -ex
           source=$GITHUB_WORKSPACE/this
           target=$GITHUB_WORKSPACE/hassos-addons/${PROJECT}
-          mkdir -p "target"
+          mkdir -p "${target}"
           cp "${source}/config.yaml" "${target}/config.yaml"
           cp "${source}/DOCS.md" "${target}/DOCS.md"
           cp "${source}/ENTRY.md" "${target}/README.md"
