@@ -141,7 +141,8 @@ func (this *meta) resolve(ctx context.Context, args []string) error {
 		"push":            push,
 		"platforms":       string(paltformsB),
 		"annotations":     mlnRecord(annotations),
-		"annotationsArgs": arguments("annotation", annotations, "manifest-descriptor:", ""),
+		"annotationsArgs": arguments("annotation", annotations, "index:", ""),
+		"duplicatRelease": this.metaConfig.DuplicatiRelease,
 	}); err != nil {
 		return err
 	}

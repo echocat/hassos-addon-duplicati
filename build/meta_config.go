@@ -15,7 +15,7 @@ type metaConfig struct {
 	Slug             string   `json:"slug,omitempty"`
 	Url              string   `json:"url,omitempty"`
 	Arch             []string `json:"arch,omitempty"`
-	DuplicatiVersion string   `json:"duplicati_version,omitempty"`
+	DuplicatiRelease string   `json:"duplicati_release,omitempty"`
 }
 
 func (this *metaConfig) read(in io.Reader) error {
