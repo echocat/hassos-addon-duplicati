@@ -1,20 +1,16 @@
 package main
 
 import (
-	"encoding/json"
 	"strings"
 )
 
-func mlnRecord(in map[string]any) (string, error) {
+func mlnRecord(in map[string]string) string {
 	var buf strings.Builder
 	for k, v := range in {
 		buf.WriteString(k)
 		buf.WriteRune('=')
-		enc := json.NewEncoder(&buf)
-		enc.SetEscapeHTML(false)
-		if err := enc.Encode(v); err != nil {
-			return "", err
-		}
+		buf.WriteString(v)
+		buf.WriteRune('\n')
 	}
-	return buf.String(), nil
+	return buf.String()
 }

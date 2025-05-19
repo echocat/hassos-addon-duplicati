@@ -124,27 +124,21 @@ func (this *meta) resolve(ctx context.Context, args []string) error {
 	if lic != nil {
 		licStr = lic.GetName()
 	}
-
-	annotations, err := mlnRecord(map[string]any{
-		"org.opencontainers.image.url":         this.build.repo.Url(),
-		"org.opencontainers.image.source":      this.build.repo.Url(),
-		"org.opencontainers.image.description": repoMeta.GetDescription(),
-		"org.opencontainers.image.created":     time.Now().Format(time.RFC3339),
-		"org.opencontainers.image.title":       this.metaConfig.Name,
-		"org.opencontainers.image.version":     imageTag,
-		"org.opencontainers.image.licenses":    licStr,
-	})
-	if err != nil {
-		return err
-	}
-
 	if err := this.build.appendToResolveOutput(map[string]string{
-		"registry":    this.build.registry,
-		"image":       image,
-		"imageTag":    imageTag,
-		"push":        push,
-		"platforms":   string(paltformsB),
-		"annotations": annotations,
+		"registry":  this.build.registry,
+		"image":     image,
+		"imageTag":  imageTag,
+		"push":      push,
+		"platforms": string(paltformsB),
+		"annotations": mlnRecord(map[string]string{
+			"org.opencontainers.image.url":         this.build.repo.Url(),
+			"org.opencontainers.image.source":      this.build.repo.Url(),
+			"org.opencontainers.image.description": repoMeta.GetDescription(),
+			"org.opencontainers.image.created":     time.Now().Format(time.RFC3339),
+			"org.opencontainers.image.title":       this.metaConfig.Name,
+			"org.opencontainers.image.version":     imageTag,
+			"org.opencontainers.image.licenses":    licStr,
+		}),
 	}); err != nil {
 		return err
 	}
@@ -175,23 +169,18 @@ func (this *meta) resolveBuild(_ context.Context, args []string) error {
 
 	imageTag, image := this.resolveImage(eventName, eventNumber, refName)
 
-	labels, err := mlnRecord(map[string]any{
-		"io.hass.type":        "addon",
-		"io.hass.version":     imageTag,
-		"io.hass.arch":        ociPlatformToHaArch(platform),
-		"io.hass.name":        this.metaConfig.Name,
-		"io.hass.description": this.metaConfig.Description,
-		"io.hass.url":         this.build.repo.Url(),
-	})
-	if err != nil {
-		return err
-	}
-
 	if err := this.build.appendToResolveOutput(map[string]string{
 		"image":         image,
 		"imageTag":      imageTag,
 		"platformToken": strings.ReplaceAll(platform, "/", "-"),
-		"labels":        labels,
+		"labels": mlnRecord(map[string]string{
+			"io.hass.type":        "addon",
+			"io.hass.version":     imageTag,
+			"io.hass.arch":        ociPlatformToHaArch(platform),
+			"io.hass.name":        this.metaConfig.Name,
+			"io.hass.description": this.metaConfig.Description,
+			"io.hass.url":         this.build.repo.Url(),
+		}),
 	}); err != nil {
 		return err
 	}

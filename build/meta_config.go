@@ -10,11 +10,12 @@ import (
 )
 
 type metaConfig struct {
-	Name        string   `json:"name,omitempty"`
-	Description string   `json:"description,omitempty"`
-	Slug        string   `json:"slug,omitempty"`
-	Url         string   `json:"url,omitempty"`
-	Arch        []string `json:"arch,omitempty"`
+	Name             string   `json:"name,omitempty"`
+	Description      string   `json:"description,omitempty"`
+	Slug             string   `json:"slug,omitempty"`
+	Url              string   `json:"url,omitempty"`
+	Arch             []string `json:"arch,omitempty"`
+	DuplicatiVersion string   `json:"duplicati_version,omitempty"`
 }
 
 func (this *metaConfig) read(in io.Reader) error {
