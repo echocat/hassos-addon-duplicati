@@ -34,8 +34,8 @@ jobs:
       image: ${{ steps.refs.outputs.image }}
       imageTag: ${{ steps.refs.outputs.imageTag }}
       push: ${{ steps.refs.outputs.push }}
-      platforms: ${{ steps.refs.outputs.platforms }}
-      annotations: ${{ steps.refs.outputs.annotations }}
+      platforms: "${{ steps.refs.outputs.platforms }}"
+      annotations: "${{ steps.refs.outputs.annotations }}"
     steps:
       - name: Check out repository
         uses: actions/checkout@v4
