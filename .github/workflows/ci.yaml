@@ -56,6 +56,8 @@ jobs:
           cp "${source}/config.yaml" "${target}/config.yaml"
           cp "${source}/DOCS.md" "${target}/DOCS.md"
           cp "${source}/ENTRY.md" "${target}/README.md"
+          cp "${source}/icon.png" "${target}/icon.png"
+          cp "${source}/logo.png" "${target}/logo.png"
           if [ -f "${source}/CHANGELOG.md" ]; then
             cp "${source}/CHANGELOG.md" "${target}/CHANGELOG.md"
           fi
@@ -71,8 +73,12 @@ jobs:
           git add "${target}/config.yaml"
           git add "${target}/DOCS.md"
           git add "${target}/README.md"
+          git add "${target}/icon.png"
+          git add "${target}/logo.png"
           if [ -f "${source}/CHANGELOG.md" ]; then
             git add "${target}/CHANGELOG.md"
+          elif [ -f "${target}/CHANGELOG.md" ]; then
+            git rm "${target}/CHANGELOG.md"
           fi
           git config --local user.email "github-actions[bot]@users.noreply.github.com"
           git config --local user.name "github-actions[bot]"
