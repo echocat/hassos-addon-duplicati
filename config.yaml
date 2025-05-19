@@ -8,7 +8,7 @@ duplicati_release: "v2.1.0.118_canary_2025-05-12"
 advanced: true
 startup: application
 ingress: true
-ingress_port: 8200
+ingress_port: 8080
 panel_icon: mdi:backup-restore
 panel_title: Duplicati
 panel_admin: true
