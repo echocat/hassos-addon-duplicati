@@ -18,6 +18,9 @@ var (
 		"server-datafolder":            "/data",
 		"require-db-encryption-key":    "True",
 		"webservice-timezone":          "Etc/UTC",
+		"disable-tray-icon-login":      "True",
+		"startup-delay":                "5m",
+		"update-channel":               "stable",
 	}
 )
 
