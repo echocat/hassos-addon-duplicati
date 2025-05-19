@@ -131,17 +131,15 @@ func (this *meta) resolve(ctx context.Context, args []string) error {
 		"imageTag=" + imageTag + "\n" +
 		"push=" + push + "\n" +
 		"platforms=" + string(paltformsB) + "\n" +
-		"{\n" +
-		"\techo \"annotations<<EOF\"\n" +
-		"\techo 'org.opencontainers.image.url=\"https://github.com/" + this.build.repo.Bare() + "\"'\n" +
-		"\techo 'org.opencontainers.image.source=\"https://github.com/" + this.build.repo.Bare() + "\"'\n" +
-		"\techo 'org.opencontainers.image.description=" + strconv.Quote(repoMeta.GetDescription()) + "'\n" +
-		"\techo 'org.opencontainers.image.created=\"" + time.Now().Format(time.RFC3339) + "\"'\n" +
-		"\techo 'org.opencontainers.image.title=" + strconv.Quote(this.metaConfig.Name) + "'\n" +
-		"\techo 'org.opencontainers.image.version=" + strconv.Quote(imageTag) + "'\n" +
-		"\techo 'org.opencontainers.image.licenses=" + strconv.Quote(licStr) + "'\n" +
-		"\techo \"EOF\"\n" +
-		"}\n",
+		"echo 'annotations<<EOF'\n" +
+		"echo 'org.opencontainers.image.url=\"https://github.com/" + this.build.repo.Bare() + "\"'\n" +
+		"echo 'org.opencontainers.image.source=\"https://github.com/" + this.build.repo.Bare() + "\"'\n" +
+		"echo 'org.opencontainers.image.description=" + strconv.Quote(repoMeta.GetDescription()) + "'\n" +
+		"echo 'org.opencontainers.image.created=\"" + time.Now().Format(time.RFC3339) + "\"'\n" +
+		"echo 'org.opencontainers.image.title=" + strconv.Quote(this.metaConfig.Name) + "'\n" +
+		"echo 'org.opencontainers.image.version=" + strconv.Quote(imageTag) + "'\n" +
+		"echo 'org.opencontainers.image.licenses=" + strconv.Quote(licStr) + "'\n" +
+		"echo 'EOF'\n",
 	); err != nil {
 		return err
 	}
