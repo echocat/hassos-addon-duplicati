@@ -125,12 +125,12 @@ func (this *meta) resolve(ctx context.Context, args []string) error {
 		licStr = lic.GetName()
 	}
 
-	if err := this.build.appendToResolveOutput(""+
-		recordln("registry", this.build.registry),
-		recordln("image", image),
-		recordln("imageTag", imageTag),
-		recordln("push", push),
-		recordln("platforms", string(paltformsB)),
+	if err := this.build.appendToResolveOutput("" +
+		recordln("registry", this.build.registry) +
+		recordln("image", image) +
+		recordln("imageTag", imageTag) +
+		recordln("push", push) +
+		recordln("platforms", string(paltformsB)) +
 		recordmln("annotations", ""+
 			recordln("org.opencontainers.image.url", this.build.repo.Url())+
 			recordln("org.opencontainers.image.source", this.build.repo.Url())+
