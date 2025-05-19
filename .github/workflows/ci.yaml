@@ -89,7 +89,6 @@ jobs:
           images: ${{ steps.refs.outputs.image }}
           labels: ${{ steps.refs.outputs.labels }}
           tags: |
-            type=sha
             type=ref,event=pr
             type=semver,pattern={{version}}
             type=semver,pattern={{major}}.{{minor}}
@@ -156,7 +155,6 @@ jobs:
         with:
           images: ${{ needs.resolve.outputs.image }}
           tags: |
-            type=sha
             type=ref,event=pr
             type=semver,pattern={{version}}
             type=semver,pattern={{major}}.{{minor}}
