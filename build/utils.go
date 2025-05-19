@@ -16,7 +16,7 @@ func mlnRecord(in map[string]string) string {
 	return buf.String()
 }
 
-func arguments(argName string, in map[string]string) string {
+func arguments(argName string, in map[string]string, prefix, suffix string) string {
 	var buf strings.Builder
 	for k, v := range in {
 		if buf.Len() > 0 {
@@ -25,7 +25,7 @@ func arguments(argName string, in map[string]string) string {
 		buf.WriteString("--")
 		buf.WriteString(argName)
 		buf.WriteString(" \"")
-		buf.WriteString(k)
+		buf.WriteString(prefix + k + suffix)
 		buf.WriteRune('=')
 		vQt := strconv.Quote(v)
 		buf.WriteString(vQt[1 : len(vQt)-1])

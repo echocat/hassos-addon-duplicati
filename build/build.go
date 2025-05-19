@@ -104,13 +104,6 @@ func (this *build) appendTo(fn, fnType, msg string) error {
 		return fmt.Errorf("cannot write %s file %q: %w", fnType, fn, err)
 	}
 
-	_ = f.Close()
-	content, err := os.ReadFile(fn)
-	if err != nil {
-		return fmt.Errorf("cannot read %s file %q: %w", fnType, fn, err)
-	}
-	fmt.Printf("+++ Content of %q+++\n%s\n--- Content of %q---\n", fn, string(content), fn)
-
 	return nil
 }
 
