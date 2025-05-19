@@ -58,7 +58,7 @@ func (this *meta) getEventNumber(fromArgs []string, i int) (int, error) {
 		return 0, nil
 	}
 
-	v, err := strconv.Atoi(strings.SplitN(fromArgs[i], "/", 2)[0])
+	v, err := strconv.Atoi(fromArgs[i])
 	if err != nil {
 		return 0, flagFail("illegal event_number: %q", fromArgs[i])
 	}
@@ -76,10 +76,10 @@ func (this *meta) getBasics(fromArgs []string, startI int) (refName, eventName s
 	if refName, err = this.getRefName(fromArgs, startI); err != nil {
 		return "", "", 0, err
 	}
-	if eventName, err = this.getEventName(fromArgs, startI); err != nil {
+	if eventName, err = this.getEventName(fromArgs, startI+1); err != nil {
 		return "", "", 0, err
 	}
-	if eventNumber, err = this.getEventNumber(fromArgs, startI); err != nil {
+	if eventNumber, err = this.getEventNumber(fromArgs, startI+2); err != nil {
 		return "", "", 0, err
 	}
 	return refName, eventName, eventNumber, nil
