@@ -50,7 +50,9 @@ jobs:
           cp "$GITHUB_WORKSPACE/this/config.yaml" "$GITHUB_WORKSPACE/hassos-addons/${PROJECT}/config.yaml"
           cp "$GITHUB_WORKSPACE/this/DOCS.md" "$GITHUB_WORKSPACE/hassos-addons/${PROJECT}/DOCS.md"
           cp "$GITHUB_WORKSPACE/this/ENTRY.md" "$GITHUB_WORKSPACE/hassos-addons/${PROJECT}/README.md"
-          cp "$GITHUB_WORKSPACE/hassos-addons/"
+          if [ -f "$GITHUB_WORKSPACE/this/CHANGELOG.md" ]; then
+            cp "$GITHUB_WORKSPACE/this/CHANGELOG.md" "$GITHUB_WORKSPACE/hassos-addons/${PROJECT}/CHANGELOG.md"
+          fi
           ref=$(echo "${{ github.ref_name }}" | sed -E "s/^v([0-9]+(\.[0-9]+)*)(-.+)?$/\1/")
           sed -i -E "s/^(version: ).+$/\1${ref}/" "${PROJECT}/config.yaml"
           if grep -q '^image: ' config.yaml; then
@@ -61,6 +63,9 @@ jobs:
           git add "${PROJECT}/config.yaml"
           git add "${PROJECT}/DOCS.md"
           git add "${PROJECT}/README.md"
+          if [ -f "$GITHUB_WORKSPACE/this/CHANGELOG.md" ]; then
+            git add "$GITHUB_WORKSPACE/hassos-addons/${PROJECT}/CHANGELOG.md"
+          fi
           git config --local user.email "github-actions[bot]@users.noreply.github.com"
           git config --local user.name "github-actions[bot]"
           git commit -m "Release announcement of ${PROJECT}:${ref}"
