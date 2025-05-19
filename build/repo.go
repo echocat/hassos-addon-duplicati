@@ -113,6 +113,10 @@ func (this repo) Bare() string {
 	return fmt.Sprintf("%s/%s", this.owner, this.name)
 }
 
+func (this repo) Url() string {
+	return fmt.Sprintf("https://github.com/%s", this.Bare())
+}
+
 func (this repo) String() string {
 	return fmt.Sprintf("%v:%s", this.ownerType, this.Bare())
 }

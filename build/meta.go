@@ -125,21 +125,21 @@ func (this *meta) resolve(ctx context.Context, args []string) error {
 		licStr = lic.GetName()
 	}
 
-	if err := this.build.appendToResolveOutput("" +
-		"registry=" + this.build.registry + "\n" +
-		"image=" + image + "\n" +
-		"imageTag=" + imageTag + "\n" +
-		"push=" + push + "\n" +
-		"platforms=" + string(paltformsB) + "\n" +
-		"annotations<<EOF\n" +
-		"org.opencontainers.image.url=\"https://github.com/" + this.build.repo.Bare() + "\"\n" +
-		"org.opencontainers.image.source=\"https://github.com/" + this.build.repo.Bare() + "\"\n" +
-		"org.opencontainers.image.description=" + strconv.Quote(repoMeta.GetDescription()) + "\n" +
-		"org.opencontainers.image.created=\"" + time.Now().Format(time.RFC3339) + "\"\n" +
-		"org.opencontainers.image.title=" + strconv.Quote(this.metaConfig.Name) + "\n" +
-		"org.opencontainers.image.version=" + strconv.Quote(imageTag) + "\n" +
-		"org.opencontainers.image.licenses=" + strconv.Quote(licStr) + "\n" +
-		"EOF\n",
+	if err := this.build.appendToResolveOutput(""+
+		recordln("registry", this.build.registry),
+		recordln("image", image),
+		recordln("imageTag", imageTag),
+		recordln("push", push),
+		recordln("platforms", string(paltformsB)),
+		recordmln("annotations", ""+
+			recordln("org.opencontainers.image.url", this.build.repo.Url())+
+			recordln("org.opencontainers.image.source", this.build.repo.Url())+
+			recordln("org.opencontainers.image.description", repoMeta.GetDescription())+
+			recordln("org.opencontainers.image.created", time.Now().Format(time.RFC3339))+
+			recordln("org.opencontainers.image.title", this.metaConfig.Name)+
+			recordln("org.opencontainers.image.version", imageTag)+
+			recordln("org.opencontainers.image.licenses", licStr),
+		),
 	); err != nil {
 		return err
 	}
@@ -149,7 +149,8 @@ func (this *meta) resolve(ctx context.Context, args []string) error {
 		"| - | - |\n" +
 		"| Image | `" + image + "` |\n" +
 		"| Should push | `" + push + "` |\n" +
-		"| Platforms | `" + strings.Join(platforms, "`, `") + "` |\n",
+		"| Platforms | `" + strings.Join(platforms, "`, `") + "` |\n" +
+		"| Version | `" + imageTag + "` |\n",
 	); err != nil {
 		return err
 	}
@@ -170,17 +171,17 @@ func (this *meta) resolveBuild(_ context.Context, args []string) error {
 	imageTag, image := this.resolveImage(eventName, eventNumber, refName)
 
 	if err := this.build.appendToResolveOutput("" +
-		"image=" + image + "\n" +
-		"imageTag=" + imageTag + "\n" +
-		"platformToken=" + strings.ReplaceAll(platform, "/", "-") + "\n" +
-		"labels<<EOF\"\n" +
-		"io.hass.type=\"addon\"\n" +
-		"io.hass.version=" + strconv.Quote(imageTag) + "\n" +
-		"io.hass.arch=\"" + ociPlatformToHaArch(platform) + "\"\n" +
-		"io.hass.name=" + strconv.Quote(this.metaConfig.Name) + "\n" +
-		"io.hass.description=" + strconv.Quote(this.metaConfig.Description) + "\n" +
-		"io.hass.url=\"https://github.com/" + this.build.repo.Bare() + "\"\n" +
-		"EOF\n",
+		recordln("image", image) +
+		recordln("imageTag", imageTag) +
+		recordln("platformToken", strings.ReplaceAll(platform, "/", "-")) +
+		recordmln("labels", ""+
+			recordln("io.hass.type", "addon")+
+			recordln("io.hass.version", imageTag)+
+			recordln("io.hass.arch", ociPlatformToHaArch(platform))+
+			recordln("io.hass.name", this.metaConfig.Name)+
+			recordln("io.hass.description", this.metaConfig.Description)+
+			recordln("io.hass.url", this.build.repo.Url()),
+		),
 	); err != nil {
 		return err
 	}
