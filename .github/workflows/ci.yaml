@@ -54,7 +54,7 @@ jobs:
             cp "$GITHUB_WORKSPACE/this/CHANGELOG.md" "$GITHUB_WORKSPACE/hassos-addons/${PROJECT}/CHANGELOG.md"
           fi
           ref=$(echo "${{ github.ref_name }}" | sed -E "s/^v([0-9]+(\.[0-9]+)*)(-.+)?$/\1/")
-          refEscaped=$(echo "$ref" | sed -E "s/\//\/\//")
+          refEscaped=$(echo "$ref" | sed -E "s/\\/\\\\/" | sed -E "s/\//\\\//")
           sed -i -E "s/^(version: ).+$/\1${refEscaped}/" "${PROJECT}/config.yaml"
           if grep -q '^image: ' config.yaml; then
             sed -i -E "s/^(image: ).+$/\1ghcr.io/echocat/hassos-addon-duplicati/" "${PROJECT}/config.yaml"
