@@ -9,7 +9,7 @@ advanced: true
 startup: application
 ingress: true
 ingress_port: 8200
-panel_icon: mdi:web
+panel_icon: mdi:backup-restore
 panel_title: Duplicati
 panel_admin: true
 backup: cold
