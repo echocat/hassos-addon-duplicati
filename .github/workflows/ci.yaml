@@ -46,26 +46,28 @@ jobs:
           PROJECT: duplicati
         run: |
           set -ex
-          mkdir -p "$GITHUB_WORKSPACE/hassos-addons/${PROJECT}"
-          cp "$GITHUB_WORKSPACE/this/config.yaml" "$GITHUB_WORKSPACE/hassos-addons/${PROJECT}/config.yaml"
-          cp "$GITHUB_WORKSPACE/this/DOCS.md" "$GITHUB_WORKSPACE/hassos-addons/${PROJECT}/DOCS.md"
-          cp "$GITHUB_WORKSPACE/this/ENTRY.md" "$GITHUB_WORKSPACE/hassos-addons/${PROJECT}/README.md"
-          if [ -f "$GITHUB_WORKSPACE/this/CHANGELOG.md" ]; then
-            cp "$GITHUB_WORKSPACE/this/CHANGELOG.md" "$GITHUB_WORKSPACE/hassos-addons/${PROJECT}/CHANGELOG.md"
+          source=$GITHUB_WORKSPACE/this
+          target=$GITHUB_WORKSPACE/hassos-addons/${PROJECT}
+          mkdir -p "target"
+          cp "${source}/config.yaml" "${target}/config.yaml"
+          cp "${source}/DOCS.md" "${target}/DOCS.md"
+          cp "${source}/ENTRY.md" "${target}/README.md"
+          if [ -f "${source}/CHANGELOG.md" ]; then
+            cp "${source}/CHANGELOG.md" "${target}/CHANGELOG.md"
           fi
           ref=$(echo "${{ github.ref_name }}" | sed -E "s/^v([0-9]+(\.[0-9]+)*)(-.+)?$/\1/")
           refEscaped=$(echo "$ref" | sed -E 's/\\/\\\\/' | sed -E 's/\//\\\//')
-          sed -i -E "s/^(version: ).+$/\1${refEscaped}/" "${PROJECT}/config.yaml"
-          if grep -q '^image: ' config.yaml; then
-            sed -i -E "s/^(image: ).+$/\1ghcr.io/echocat/hassos-addon-duplicati/" "${PROJECT}/config.yaml"
+          sed -i -E "s/^(version: ).+$/\1${refEscaped}/" "${target}/config.yaml"
+          if grep -q '^image: ' "${target}/config.yaml"; then
+            sed -i -E "s/^(image: ).+$/\1ghcr.io/echocat/hassos-addon-duplicati/" "${target}/config.yaml"
           else
-            echo "image: ghcr.io/echocat/hassos-addon-duplicati" >> "${PROJECT}/config.yaml"
+            echo "image: ghcr.io/echocat/hassos-addon-duplicati" >> "${target}/config.yaml"
           fi
-          git add "${PROJECT}/config.yaml"
-          git add "${PROJECT}/DOCS.md"
-          git add "${PROJECT}/README.md"
-          if [ -f "$GITHUB_WORKSPACE/this/CHANGELOG.md" ]; then
-            git add "$GITHUB_WORKSPACE/hassos-addons/${PROJECT}/CHANGELOG.md"
+          git add "${target}/config.yaml"
+          git add "${target}/DOCS.md"
+          git add "${target}/README.md"
+          if [ -f "${source}/CHANGELOG.md" ]; then
+            git add "${target}/CHANGELOG.md"
           fi
           git config --local user.email "github-actions[bot]@users.noreply.github.com"
           git config --local user.name "github-actions[bot]"
