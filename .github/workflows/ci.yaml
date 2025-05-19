@@ -38,7 +38,7 @@ jobs:
       - name: Check out hassos-addons repository
         uses: actions/checkout@v4
         with:
-          repository: https://github.com/echocat/hassos-addons.git
+          repository: echocat/hassos-addons
           path: hassos-addons
           ref: main
           token: ${{ secrets.HASSOS_ADDONS_REPO }}
