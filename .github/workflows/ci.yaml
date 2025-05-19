@@ -26,49 +26,6 @@ concurrency:
   group: ${{ github.workflow }}-${{github.ref}}
 
 jobs:
-  foo:
-    runs-on: ubuntu-latest
-    name: "Foo"
-    steps:
-      - name: Check out this repository
-        uses: actions/checkout@v4
-        with:
-          path: this
-
-      - name: Check out hassos-addons repository
-        uses: actions/checkout@v4
-        with:
-          repository: echocat/hassos-addons
-          path: hassos-addons
-          ref: main
-          token: ${{ secrets.HASSOS_ADDONS_REPO }}
-
-      - name: Adjust hassos-addons
-        env:
-          PROJECT: duplicati
-        run: |
-          set -ex
-          cd "$GITHUB_WORKSPACE/hassos-addons"
-
-          source=$GITHUB_WORKSPACE/this
-          target=$GITHUB_WORKSPACE/hassos-addons/${PROJECT}
-          rm -rf "${target}"
-          cp -R "${source}/config/" "${target}/"
-          ref=$(echo "${{ github.ref_name }}" | sed -E "s/^v([0-9]+(\.[0-9]+)*)(-.+)?$/\1/")
-          refEscaped=$(echo "$ref" | sed -E 's/\\/\\\\/' | sed -E 's/\//\\\//')
-          sed -i -E "s/^(version: ).+$/\1${refEscaped}/" "${target}/config.yaml"
-          if grep -q '^image: ' "${target}/config.yaml"; then
-            sed -i -E "s/^(image: ).+$/\1ghcr.io/echocat/hassos-addon-duplicati/" "${target}/config.yaml"
-          else
-            echo "image: ghcr.io/echocat/hassos-addon-duplicati" >> "${target}/config.yaml"
-          fi
-          
-          git add -A "${target}"
-          git config --local user.email "github-actions[bot]@users.noreply.github.com"
-          git config --local user.name "github-actions[bot]"
-          git commit -m "Release announcement of ${PROJECT}:${ref}"
-          git push origin main
-
   resolve:
     runs-on: ubuntu-latest
     name: "Resolve"
@@ -236,20 +193,41 @@ jobs:
       - merge
     if: ${{ github.event_name == 'release' }}
     steps:
-      - name: Check out repository
+      - name: Check out this repository
         uses: actions/checkout@v4
+        with:
+          path: this
 
-      - name: Update files
+      - name: Check out hassos-addons repository
+        uses: actions/checkout@v4
+        with:
+          repository: echocat/hassos-addons
+          path: hassos-addons
+          ref: main
+          token: ${{ secrets.HASSOS_ADDONS_REPO }}
+
+      - name: Adjust hassos-addons
+        env:
+          PROJECT: duplicati
         run: |
           set -ex
+          cd "$GITHUB_WORKSPACE/hassos-addons"
+
+          source=$GITHUB_WORKSPACE/this
+          target=$GITHUB_WORKSPACE/hassos-addons/${PROJECT}
+          rm -rf "${target}"
+          cp -R "${source}/config/" "${target}/"
           ref=$(echo "${{ github.ref_name }}" | sed -E "s/^v([0-9]+(\.[0-9]+)*)(-.+)?$/\1/")
-          sed -i -E "s/^(version: ).+$/\1${ref}/" "config.yaml"
-          git add "config.yaml"
+          refEscaped=$(echo "$ref" | sed -E 's/\\/\\\\/' | sed -E 's/\//\\\//')
+          sed -i -E "s/^(version: ).+$/\1${refEscaped}/" "${target}/config.yaml"
+          if grep -q '^image: ' "${target}/config.yaml"; then
+            sed -i -E "s/^(image: ).+$/\1ghcr.io/echocat/hassos-addon-duplicati/" "${target}/config.yaml"
+          else
+            echo "image: ghcr.io/echocat/hassos-addon-duplicati" >> "${target}/config.yaml"
+          fi
+          
+          git add -A "${target}"
           git config --local user.email "github-actions[bot]@users.noreply.github.com"
           git config --local user.name "github-actions[bot]"
-          git commit -m "Release announcement of ${ref}"
-
-      - name: Push changes
-        uses: ad-m/github-push-action@master
-        with:
-          branch: ${{ github.head_ref }}
+          git commit -m "Release announcement of ${PROJECT}:${ref}"
+          git push origin main
