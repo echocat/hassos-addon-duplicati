@@ -18,12 +18,14 @@ func newPrs() prs {
 	return prs{}
 }
 
-func (this *prs) init(b *build, _ *flag.FlagSet) {
+func (this *prs) init(b *build, _ *flag.FlagSet) error {
 	this.build = b
 
 	b.registerCommand("rerun-pr-workflow", "<prNumber> <workflowFilename>", this.rerunLatestWorkflowCmd)
 	b.registerCommand("has-pr-label", "<prNumber> <label>", this.hasLabelCmd)
 	b.registerCommand("is-pr-open", "<prNumber>", this.isOpenCmd)
+
+	return nil
 }
 
 func (this *prs) Validate() error { return nil }

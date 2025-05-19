@@ -15,8 +15,9 @@ func newActions() actions {
 	return actions{}
 }
 
-func (this *actions) init(b *build, _ *flag.FlagSet) {
+func (this *actions) init(b *build, _ *flag.FlagSet) error {
 	this.build = b
+	return nil
 }
 
 type actions struct {

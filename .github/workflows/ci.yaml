@@ -30,10 +30,14 @@ jobs:
     runs-on: ubuntu-latest
     name: "Resolve"
     outputs:
-      registry: "${{ steps.refs.outputs.registry }}"
-      image: "${{ steps.refs.outputs.image }}"
-      imageTag: "${{ steps.refs.outputs.imageTag }}"
-      push: "${{ steps.refs.outputs.push }}"
+      registry: ${{ steps.refs.outputs.registry }}
+      image: ${{ steps.refs.outputs.image }}
+      imageTag: ${{ steps.refs.outputs.imageTag }}
+      push: ${{ steps.refs.outputs.push }}
+      platforms: ${{ steps.refs.outputs.platforms }}
+      annotations: ${{ steps.refs.outputs.annotations }}
+      annotationsArgs: ${{ steps.refs.outputs.annotationsArgs }}
+      duplicatRelease: ${{ steps.refs.outputs.duplicatRelease }}
     steps:
       - name: Check out repository
         uses: actions/checkout@v4
@@ -48,43 +52,7 @@ jobs:
 
       - name: Execute
         id: refs
-        working-directory: build
-        run: |
-          set -e
-          function hasLabel() {
-            go run . has-pr-label "${1}" "${TEST_IMAGE_LABEL_NAME}" && return 0 || retVal=$?
-            if [ "$retVal" -eq 1 ]; then
-              return 1
-            fi
-            exit $retVal
-          }
-          
-          registry="${{ env.REGISTRY }}"
-          if [ "${{ github.event_name }}" == "pull_request" ]; then
-            imageTag="pr-${{ github.event.number }}"
-          else
-            imageTag="$(echo "${{ github.ref_name }}" | sed -E "s/^v([0-9]+(\.[0-9]+)*)(-.+)?$/\1/")"
-          fi
-          image="${registry}/${{ github.repository }}"
-
-          if [ "${{ github.event_name }}" == "release" ]; then
-            push="true"
-          elif [ "${{ github.event_name }}" == "pull_request" ] && hasLabel "${{ github.event.number }}"; then
-            push="true"
-          else
-            push="false"
-          fi
-
-          echo "registry=${registry}" >> "$GITHUB_OUTPUT"
-          echo "image=${image}" >> "$GITHUB_OUTPUT"
-          echo "imageTag=${imageTag}" >> "$GITHUB_OUTPUT"
-          echo "push=${push}" >> "$GITHUB_OUTPUT"
-
-          echo "## Task information" >> "$GITHUB_STEP_SUMMARY"
-          echo "| Name | Value |" >> "$GITHUB_STEP_SUMMARY"
-          echo "| - | - |" >> "$GITHUB_STEP_SUMMARY"
-          echo "| Image | \`${image}\` |" >> "$GITHUB_STEP_SUMMARY"
-          echo "| Should push | \`${push}\` |" >> "$GITHUB_STEP_SUMMARY"
+        run: go run ./build resolve "${{ github.ref_name }}" "${{ github.event_name }}" "${{ github.event.number }}"
 
   build:
     runs-on: ubuntu-latest
@@ -93,10 +61,7 @@ jobs:
       - resolve
     strategy:
       matrix:
-        platform:
-          - linux/amd64
-          - linux/arm64
-          - linux/arm/v7
+        platform:  ${{ fromJson(needs.resolve.outputs.platforms) }}
     permissions:
       pull-requests: read
       contents: read
@@ -106,20 +71,24 @@ jobs:
       - name: Check out repository
         uses: actions/checkout@v4
 
+      - name: Install Go
+        uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+          check-latest: true
+          cache-dependency-path: |
+            go.sum
+
       - name: Prepare
         id: refs
-        working-directory: build
-        run: |
-          set -e
-          platform="${{ matrix.platform }}"
-          echo "platformPair=${platform//\//-}" >> "$GITHUB_OUTPUT"
-          echo "labels=${{ steps.meta.outputs.labels }}" >> "$GITHUB_OUTPUT"
+        run: go run ./build resolve-build "${{ matrix.platform }}" "${{ github.ref_name }}" "${{ github.event_name }}" "${{ github.event.number }}"
 
       - name: Docker meta
         id: meta
         uses: docker/metadata-action@v5
         with:
-          images: "${{ steps.refs.outputs.image }}"
+          images: ${{ steps.refs.outputs.image }}
+          labels: ${{ steps.refs.outputs.labels }}
           tags: |
             type=sha
             type=ref,event=pr
@@ -135,17 +104,19 @@ jobs:
       - name: Log in to the Container registry
         uses: docker/login-action@v3
         with:
-          registry: "${{ needs.resolve.outputs.registry }}"
-          username: "${{ github.actor }}"
-          password: "${{ secrets.GITHUB_TOKEN }}"
+          registry: ${{ needs.resolve.outputs.registry }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Build image
         id: build
         uses: docker/build-push-action@v6
         with:
           context: "."
-          platforms: "${{ matrix.platform }}"
-          labels: "${{ steps.meta.outputs.labels }}"
+          platforms: ${{ matrix.platform }}
+          labels: ${{ steps.meta.outputs.labels }}
+          build-args: |
+            DUPLICATI_RELEASE=${{ needs.resolve.outputs.duplicatRelease }}
           outputs: "type=image,name=${{ needs.resolve.outputs.image }},push-by-digest=${{ needs.resolve.outputs.push }},name-canonical=true,push=${{ needs.resolve.outputs.push }}"
 
       - name: Export image digest
@@ -159,8 +130,8 @@ jobs:
         if: needs.resolve.outputs.push == 'true'
         uses: actions/upload-artifact@v4
         with:
-          name: digests-${{ steps.refs.outputs.platformPair }}
-          path: "${{ runner.temp }}/digests/digests/*"
+          name: digests-${{ steps.refs.outputs.platformToken }}
+          path: "${{ runner.temp }}/digests/*"
           if-no-files-found: error
           retention-days: 1
 
@@ -196,19 +167,20 @@ jobs:
       - name: Login to Docker Hub
         uses: docker/login-action@v3
         with:
-          registry: "${{ needs.resolve.outputs.registry }}"
-          username: "${{ github.actor }}"
-          password: "${{ secrets.GITHUB_TOKEN }}"
+          registry: ${{ needs.resolve.outputs.registry }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Create manifest list and push
         working-directory: "${{ runner.temp }}/digests"
         run: |
           docker buildx imagetools create $(jq -cr '.tags | map("-t " + .) | join(" ")' <<< "$DOCKER_METADATA_OUTPUT_JSON") \
+            ${{ needs.resolve.outputs.annotationsArgs }} \
             $(printf '${{ needs.resolve.outputs.image }}@sha256:%s ' *)          
 
       - name: Inspect image
         run: |
-          docker buildx imagetools inspect ${{ needs.resolve.outputs.image }}:${{ steps.meta.outputs.version }}    
+          docker buildx imagetools inspect ${{ needs.resolve.outputs.image }}:${{ steps.meta.outputs.version }}
 
   announce:
     name: Announce changes
@@ -221,20 +193,41 @@ jobs:
       - merge
     if: ${{ github.event_name == 'release' }}
     steps:
-      - name: Check out repository
+      - name: Check out this repository
         uses: actions/checkout@v4
+        with:
+          path: this
 
-      - name: Update files
+      - name: Check out hassos-addons repository
+        uses: actions/checkout@v4
+        with:
+          repository: echocat/hassos-addons
+          path: hassos-addons
+          ref: main
+          token: ${{ secrets.HASSOS_ADDONS_REPO }}
+
+      - name: Adjust hassos-addons
+        env:
+          PROJECT: duplicati
         run: |
           set -ex
+          cd "$GITHUB_WORKSPACE/hassos-addons"
+
+          source=$GITHUB_WORKSPACE/this
+          target=$GITHUB_WORKSPACE/hassos-addons/${PROJECT}
+          rm -rf "${target}"
+          cp -R "${source}/config/" "${target}/"
           ref=$(echo "${{ github.ref_name }}" | sed -E "s/^v([0-9]+(\.[0-9]+)*)(-.+)?$/\1/")
-          sed -i -E "s/^(version: ).+$/\1${ref}/" "config.yaml"
-          git add "config.yaml"
+          refEscaped=$(echo "$ref" | sed -E 's/\\/\\\\/' | sed -E 's/\//\\\//')
+          sed -i -E "s/^(version: ).+$/\1${refEscaped}/" "${target}/config.yaml"
+          if grep -q '^image: ' "${target}/config.yaml"; then
+            sed -i -E "s/^(image: ).+$/\1ghcr.io/echocat/hassos-addon-duplicati/" "${target}/config.yaml"
+          else
+            echo "image: ghcr.io/echocat/hassos-addon-duplicati" >> "${target}/config.yaml"
+          fi
+          
+          git add -A "${target}"
           git config --local user.email "github-actions[bot]@users.noreply.github.com"
           git config --local user.name "github-actions[bot]"
-          git commit -m "Release announcement of ${ref}"
-
-      - name: Push changes
-        uses: ad-m/github-push-action@master
-        with:
-          branch: ${{ github.head_ref }}
+          git commit -m "Release announcement of ${PROJECT}:${ref}"
+          git push origin main

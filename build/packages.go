@@ -15,9 +15,11 @@ func newPackages() packages {
 	return packages{}
 }
 
-func (this *packages) init(b *build, _ *flag.FlagSet) {
+func (this *packages) init(b *build, _ *flag.FlagSet) error {
 	this.build = b
 	b.registerCommand("delete-image-tag", "<tag> [<tag> ..]", this.deleteVersionsWithTags)
+
+	return nil
 }
 
 func (this *packages) Validate() error { return nil }
