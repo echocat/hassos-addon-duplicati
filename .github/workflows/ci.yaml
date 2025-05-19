@@ -38,6 +38,7 @@ jobs:
       - name: Check out hassos-addons repository
         uses: actions/checkout@v4
         with:
+          repository: https://github.com/echocat/hassos-addons.git
           path: hassos-addons
           ref: main
           token: ${{ secrets.HASSOS_ADDONS_REPO }}
@@ -76,7 +77,6 @@ jobs:
           git config --local user.email "github-actions[bot]@users.noreply.github.com"
           git config --local user.name "github-actions[bot]"
           git commit -m "Release announcement of ${PROJECT}:${ref}"
-          git config --unset-all http.https://github.com/.extraheader
           git push origin main
 
   resolve:
