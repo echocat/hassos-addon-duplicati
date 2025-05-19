@@ -58,7 +58,7 @@ func (this *meta) getEventNumber(fromArgs []string, i int) (int, error) {
 		return 0, nil
 	}
 
-	v, err := strconv.Atoi(fromArgs[i])
+	v, err := strconv.Atoi(strings.SplitN(fromArgs[i], "/", 2)[0])
 	if err != nil {
 		return 0, flagFail("illegal event_number: %q", fromArgs[i])
 	}
