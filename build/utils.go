@@ -5,10 +5,6 @@ import (
 	"strconv"
 )
 
-func q(in string) string {
-	return strconv.Quote(in)
-}
-
 func recordmln(k, v string) string {
 	return k + "<<EOF\n" + v + "EOF\n"
 }
