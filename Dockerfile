@@ -40,7 +40,6 @@ RUN \
     && echo ttf-mscorefonts-installer msttcorefonts/accepted-mscorefonts-eula select true | debconf-set-selections \
     && apt-get update  \
     && apt-get install -y \
-       tini \
        ca-certificates \
        bash \
        jq \
@@ -50,9 +49,6 @@ RUN \
        unzip \
        xz-utils \
     && echo -e "\n\n\e[1;94m+---------------------+\n| Resolve Environment |\n+---------------------+\e[0m" \
-    && if [ -z ${DUPLICATI_RELEASE+x} ]; then \
-        DUPLICATI_RELEASE=$(curl -sX GET "https://api.github.com/repos/duplicati/duplicati/releases/latest" | jq -r .tag_name); \
-      fi \
     && echo -e "\e[1;94mUsing release: ${DUPLICATI_RELEASE}\e[0m" \
     && echo -e "\e[1;94mUsing variant: ${VARIANT}\e[0m" \
     && echo -e "\n\n\e[1;94m+--------------------+\n| Download Duplicati |\n+--------------------+\e[0m" \
@@ -68,6 +64,10 @@ RUN \
         && unzip -p -q /tmp/dotnet_scl.zip lib/netstandard2.0/System.CommandLine.dll > /opt/duplicati/System.CommandLine.dll \
       ; fi \
     && echo -e "\n\n\e[1;94m+---------+\n| Cleanup |\n+---------+\e[0m" \
+    && apt-get remove -y \
+       jq \
+       unzip \
+       xz-utils \
     && apt-get clean \
     && rm -rf /tmp/* \
     && rm -rf /var/lib/apt/lists/* \

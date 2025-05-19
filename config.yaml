@@ -15,6 +15,7 @@ panel_admin: true
 backup: cold
 boot: auto
 host_network: false
+homeassistant: 2025.5.0
 privileged: []
 options: {}
 schema: {}

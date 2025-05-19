@@ -2,18 +2,25 @@ package main
 
 import (
 	"bufio"
+	"bytes"
 	"context"
+	_ "embed"
 	"errors"
 	"fmt"
+	"io"
 	"net"
 	"net/http"
 	"net/http/httputil"
 	"net/url"
+	"strconv"
+	"strings"
 	"time"
 
 	log "github.com/echocat/slf4g"
 	"github.com/echocat/slf4g/level"
 	sdk "github.com/echocat/slf4g/sdk/bridge"
+	"github.com/tdewolff/minify/v2"
+	"github.com/tdewolff/minify/v2/js"
 )
 
 const (
@@ -29,6 +36,7 @@ func newServer(opt options) (srv *server, err error) {
 	srv.reverseProxy.Rewrite = srv.rewriteProxyRequest
 	srv.reverseProxy.ErrorHandler = srv.handleProxyError
 	srv.reverseProxy.ErrorLog = sdk.NewWrapper(srv.logger, level.Error)
+	srv.reverseProxy.ModifyResponse = srv.interceptResponse
 	srv.impl.Handler = http.HandlerFunc(srv.handleWrapper)
 	srv.impl.Addr = fmt.Sprintf(":%d", serverPort)
 
@@ -92,7 +100,7 @@ func (srv *server) handleWrapper(ow http.ResponseWriter, r *http.Request) {
 
 func (srv *server) handle(rw http.ResponseWriter, r *http.Request) {
 	switch r.URL.Path {
-	case "/api/v1/auth/refresh":
+	case "/api/v1/auth/refresh", "/foo/bar/api/v1/auth/refresh":
 		srv.handlerAuthRefresh(rw, r)
 	default:
 		srv.reverseProxy.ServeHTTP(rw, r)
@@ -110,14 +118,75 @@ func (srv *server) handlerAuthRefresh(rw http.ResponseWriter, r *http.Request) {
 
 func (srv *server) rewriteProxyRequest(pr *httputil.ProxyRequest) {
 	pr.SetURL(srv.upstreamUrl)
-	pr.Out.Host = pr.In.Host
 	pr.SetXForwarded()
+	pr.Out.Host = pr.In.Host
 	pr.Out.Header.Set("Authorization", "PreAuth "+srv.options.webservicePreAuthTokens)
+
+	if pr.Out.URL != nil && pr.Out.URL.Path == "/foo/bar" {
+		pr.Out.URL.Path = "/"
+	} else if pr.Out.URL != nil && strings.HasPrefix(pr.Out.URL.Path, "/foo/bar/") {
+		pr.Out.URL.Path = strings.TrimPrefix(pr.Out.URL.Path, "/foo/bar")
+	}
+
+	if pr.Out.RequestURI == "/foo/bar" {
+		pr.Out.RequestURI = "/"
+	} else if strings.HasPrefix(pr.Out.RequestURI, "/foo/bar/") {
+		pr.Out.RequestURI = strings.TrimPrefix(pr.Out.RequestURI, "/foo/bar")
+	}
 }
 
-func (srv *server) handleProxyError(rw http.ResponseWriter, r *http.Request, err error) {
+func (srv *server) handleProxyError(rw http.ResponseWriter, _ *http.Request, err error) {
 	srv.logger.WithError(err).Error()
 	http.Error(rw, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+}
+
+var (
+	//go:embed server_rewritePrefixJs.js
+	rewritePrefixJs string
+
+	rewritePrefixJsCompressed = func(in string) string {
+		m := minify.New()
+		var buf strings.Builder
+		if err := js.Minify(m, &buf, strings.NewReader(in), nil); err != nil {
+			panic(err)
+		}
+		return buf.String()
+	}(rewritePrefixJs)
+)
+
+func (srv *server) fixJsRequestsScript(ingressPath string) string {
+	return `<script>const __wrapperPrefix__="` + ingressPath + `";` + rewritePrefixJsCompressed + `</script>`
+}
+
+func (srv *server) interceptResponse(rsp *http.Response) error {
+	if rsp.Request.Method != http.MethodGet {
+		return nil
+	}
+	// ingressPath := rsp.Request.Header.Get("X-Ingress-Path")
+	ingressPath := "/foo/bar/"
+	ingressPath = strings.TrimSuffix(ingressPath, "/")
+	if ingressPath == "" {
+		return nil
+	}
+	if !strings.HasPrefix(rsp.Header.Get("Content-Type"), "text/html") {
+		return nil
+	}
+
+	b, err := io.ReadAll(rsp.Body)
+	if err != nil {
+		return fmt.Errorf("cannot buffer HTML body: %w", err)
+	}
+	if err := rsp.Body.Close(); err != nil {
+		return fmt.Errorf("cannot close upstream response body: %w", err)
+	}
+
+	if bytes.Contains(b, []byte(`<base href="`)) {
+		b = bytes.Replace(b, []byte(`<base href="`), []byte(srv.fixJsRequestsScript(ingressPath)+`<base href="`+ingressPath), 1)
+	}
+	rsp.Body = io.NopCloser(bytes.NewReader(b))
+	rsp.ContentLength = int64(len(b))
+	rsp.Header.Set("Content-Length", strconv.Itoa(len(b)))
+	return nil
 }
 
 type httpResponseWriter struct {
