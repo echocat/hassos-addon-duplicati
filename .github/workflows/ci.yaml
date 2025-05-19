@@ -34,8 +34,9 @@ jobs:
       image: ${{ steps.refs.outputs.image }}
       imageTag: ${{ steps.refs.outputs.imageTag }}
       push: ${{ steps.refs.outputs.push }}
-      platforms: "${{ steps.refs.outputs.platforms }}"
-      annotations: "${{ steps.refs.outputs.annotations }}"
+      platforms: ${{ steps.refs.outputs.platforms }}
+      annotations: ${{ steps.refs.outputs.annotations }}
+      annotationsArgs: ${{ steps.refs.outputs.annotationsArgs }}
     steps:
       - name: Check out repository
         uses: actions/checkout@v4
@@ -154,7 +155,6 @@ jobs:
         uses: docker/metadata-action@v5
         with:
           images: ${{ needs.resolve.outputs.image }}
-          annotations: ${{ needs.resolve.outputs.annotations }}
           tags: |
             type=sha
             type=ref,event=pr
@@ -172,6 +172,7 @@ jobs:
         working-directory: "${{ runner.temp }}/digests"
         run: |
           docker buildx imagetools create $(jq -cr '.tags | map("-t " + .) | join(" ")' <<< "$DOCKER_METADATA_OUTPUT_JSON") \
+            ${{ needs.resolve.outputs.annotationsArgs }} \
             $(printf '${{ needs.resolve.outputs.image }}@sha256:%s ' *)          
 
       - name: Inspect image

@@ -124,21 +124,24 @@ func (this *meta) resolve(ctx context.Context, args []string) error {
 	if lic != nil {
 		licStr = lic.GetName()
 	}
+	annotations := map[string]string{
+		"org.opencontainers.image.url":         this.build.repo.Url(),
+		"org.opencontainers.image.source":      this.build.repo.Url(),
+		"org.opencontainers.image.description": repoMeta.GetDescription(),
+		"org.opencontainers.image.created":     time.Now().Format(time.RFC3339),
+		"org.opencontainers.image.title":       this.metaConfig.Name,
+		"org.opencontainers.image.version":     imageTag,
+		"org.opencontainers.image.licenses":    licStr,
+	}
+
 	if err := this.build.appendToResolveOutput(map[string]string{
-		"registry":  this.build.registry,
-		"image":     image,
-		"imageTag":  imageTag,
-		"push":      push,
-		"platforms": string(paltformsB),
-		"annotations": mlnRecord(map[string]string{
-			"org.opencontainers.image.url":         this.build.repo.Url(),
-			"org.opencontainers.image.source":      this.build.repo.Url(),
-			"org.opencontainers.image.description": repoMeta.GetDescription(),
-			"org.opencontainers.image.created":     time.Now().Format(time.RFC3339),
-			"org.opencontainers.image.title":       this.metaConfig.Name,
-			"org.opencontainers.image.version":     imageTag,
-			"org.opencontainers.image.licenses":    licStr,
-		}),
+		"registry":        this.build.registry,
+		"image":           image,
+		"imageTag":        imageTag,
+		"push":            push,
+		"platforms":       string(paltformsB),
+		"annotations":     mlnRecord(annotations),
+		"annotationsArgs": arguments("annotation", annotations),
 	}); err != nil {
 		return err
 	}
