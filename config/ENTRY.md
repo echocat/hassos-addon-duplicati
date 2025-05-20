@@ -1,3 +1,0 @@
-# Home Assistant Add-on: Duplicati
-
-`ENTRY.md` ...
