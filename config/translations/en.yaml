@@ -1,0 +1,10 @@
+configuration:
+  log_level:
+    name: Log level
+    description: >- 
+      The log level where Duplicati itself will log its events on.
+  wrapper_log_level:
+    name: Wrapper's log level
+    description: >- 
+      Level where the wrapper which controls Duplicati will log its events on.
+      If set to Debug also each request sent to this addons will be logged.
