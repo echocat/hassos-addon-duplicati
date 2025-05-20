@@ -1,5 +1,9 @@
 # Home Assistant Add-on: Duplicati
 
+![Version](https://img.shields.io/github/release/echocat/hassos-addon-duplicati.svg?label=Version&style=flat-square)
+![Ingress](https://img.shields.io/badge/dynamic/yaml?label=Ingress&style=flat-square&query=%24.ingress&url=https%3A%2F%2Fraw.githubusercontent.com%2Fechocat%2Fhassos-addon-duplicati%2Fmain%2Fconfig%2Fconfig.yaml)
+![Arch](https://img.shields.io/badge/dynamic/yaml?color=success&label=Arch&style=flat-square&query=%24.arch&url=https%3A%2F%2Fraw.githubusercontent.com%2Fechocat%2Fhassos-addon-duplicati%2Fmain%2Fconfig%2Fconfig.yaml)
+
 ## About
 
 If you want to create more precise backups of your Home Assistant than what the built-in tools offer, [Duplicati](https://duplicati.com/) is a helpful solution. It allows you to back up either the entire system or selected files locally or to a wide range of cloud storage providers.
