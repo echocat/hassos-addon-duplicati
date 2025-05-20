@@ -20,10 +20,12 @@ homeassistant: 2025.5.0
 homeassistant_api: true
 privileged: []
 options:
+  gui: ngax
   log_level: Information
   wrapper_log_level: Info
 schema:
   custom_release: url?
+  gui: list(ngax|ngclient)
   log_level: list(Error|Warning|Information|Verbose|Profiling)
   wrapper_log_level: list(Fatal|Error|Warn|Info|Debug|Trace)
 arch:

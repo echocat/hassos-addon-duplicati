@@ -100,10 +100,24 @@ func (srv *server) handleWrapper(ow http.ResponseWriter, r *http.Request) {
 
 func (srv *server) handle(rw http.ResponseWriter, r *http.Request) {
 	switch r.URL.Path {
+	case "/", "", "/index.html":
+		srv.handlerIndex(rw, r)
 	case "/api/v1/auth/refresh":
 		srv.handlerAuthRefresh(rw, r)
 	default:
 		srv.reverseProxy.ServeHTTP(rw, r)
+	}
+}
+
+func (srv *server) handlerIndex(rw http.ResponseWriter, r *http.Request) {
+	switch r.Method {
+	case "GET", "HEAD":
+		ingressPath := r.Header.Get("X-Ingress-Path")
+		ingressPath = strings.TrimSuffix(ingressPath, "/")
+		rw.Header().Set("Location", ingressPath+srv.options.gui.initPath())
+		rw.WriteHeader(http.StatusTemporaryRedirect)
+	default:
+		http.Error(rw, "Bad Request", http.StatusMethodNotAllowed)
 	}
 }
 

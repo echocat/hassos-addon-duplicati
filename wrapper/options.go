@@ -25,6 +25,7 @@ const (
 )
 
 type options struct {
+	gui             optionsGui
 	customRelease   string
 	logLevel        optionsLogLevel
 	wrapperLogLevel optionsWrapperLogLevel
@@ -36,6 +37,7 @@ type options struct {
 }
 
 type optionsPayload struct {
+	Gui             options                `json:"gui,omitempty"`
 	CustomRelease   string                 `json:"custom_release,omitempty"`
 	LogLevel        optionsLogLevel        `json:"log_level,omitempty"`
 	WrapperLogLevel optionsWrapperLogLevel `json:"wrapper_log_level,omitempty"`
@@ -282,6 +284,30 @@ func (opt *options) defaultHaInfoUrl() string {
 		return v
 	}
 	return haInfoUrlDefault
+}
+
+type optionsGui string
+
+func (ol *optionsGui) UnmarshalText(text []byte) error {
+	*ol = optionsGui(optionsGui(text).String())
+	return nil
+}
+
+func (ol optionsGui) MarshalText() ([]byte, error) {
+	return []byte(ol.String()), nil
+}
+
+func (ol optionsGui) String() string {
+	switch strings.ToLower(string(ol)) {
+	case "ngclient":
+		return "ngclient"
+	default:
+		return "ngax"
+	}
+}
+
+func (ol optionsGui) initPath() string {
+	return "/" + ol.String() + "/"
 }
 
 type optionsLogLevel string
