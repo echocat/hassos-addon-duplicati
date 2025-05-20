@@ -58,6 +58,7 @@ type haInfoPayloadData struct {
 }
 
 func (opt *options) set(payload optionsPayload) error {
+	opt.gui = payload.Gui
 	opt.customRelease = payload.CustomRelease
 	opt.logLevel = payload.LogLevel
 	opt.wrapperLogLevel = payload.WrapperLogLevel
