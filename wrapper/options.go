@@ -25,6 +25,7 @@ const (
 )
 
 type options struct {
+	customRelease   string
 	logLevel        optionsLogLevel
 	wrapperLogLevel optionsWrapperLogLevel
 	timezone        string
@@ -35,6 +36,7 @@ type options struct {
 }
 
 type optionsPayload struct {
+	CustomRelease   string                 `json:"custom_release,omitempty"`
 	LogLevel        optionsLogLevel        `json:"log_level,omitempty"`
 	WrapperLogLevel optionsWrapperLogLevel `json:"wrapper_log_level,omitempty"`
 }
@@ -54,6 +56,7 @@ type haInfoPayloadData struct {
 }
 
 func (opt *options) set(payload optionsPayload) error {
+	opt.customRelease = payload.CustomRelease
 	opt.logLevel = payload.LogLevel
 	opt.wrapperLogLevel = payload.WrapperLogLevel
 	return nil

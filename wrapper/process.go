@@ -1,20 +1,35 @@
 package main
 
 import (
+	"context"
 	"errors"
 	"fmt"
+	"io"
+	"net/http"
 	"os"
 	"os/exec"
+	"path"
 	"path/filepath"
+	"strings"
 	"syscall"
 
 	log "github.com/echocat/slf4g"
+	"github.com/mholt/archives"
 )
 
 const (
 	processPort              = 8300
 	processExecutableEnvVar  = "PROCESS_EXECUTABLE"
 	processExecutableDefault = "/opt/duplicati/duplicati-server"
+
+	customReleaseTargetDefault     = "/opt/duplicati/custom"
+	customReleaseTargetEnvVar      = "CUSTOM_RELEASE_TARGET"
+	customReleaseExecutableDefault = "duplicati-server"
+	customReleaseExecutableEnvVar  = "CUSTOM_RELEASE_EXECUTABLE"
+)
+
+var (
+	background = context.Background()
 )
 
 func newProcess(opts options) (result *process, err error) {
@@ -23,6 +38,13 @@ func newProcess(opts options) (result *process, err error) {
 	}
 
 	executable := processExecutable()
+	if opts.customRelease != "" {
+		executable, err = downloadCustomProcess(opts.customRelease)
+		if err != nil {
+			return nil, err
+		}
+	}
+
 	result.cmd = exec.Command(executable,
 		"--webservice-disable-https=True",
 		"--log-file=/dev/stdout",
@@ -47,7 +69,132 @@ func newProcess(opts options) (result *process, err error) {
 		return nil, fmt.Errorf("cannot start process %v: %w", result.cmd, err)
 	}
 
-	return result, err
+	return result, nil
+}
+
+func downloadCustomProcess(from string) (string, error) {
+	logger := log.With("customRelease", from)
+	logger.Info("downloading custom release, this could take a few minutes...")
+	rsp, err := http.Get(from)
+	if err != nil {
+		return "", fmt.Errorf("cannot download custom release from URL %q: %w", from, err)
+	}
+	defer func() {
+		_ = rsp.Body.Close()
+	}()
+	if rsp.StatusCode != http.StatusOK {
+		return "", fmt.Errorf("cannot download custom release from URL %q: %d - %s", from, rsp.StatusCode, rsp.Status)
+	}
+	fBuf, err := os.CreateTemp("", "custom-release-*.zip")
+	if err != nil {
+		return "", fmt.Errorf("cannot buffer custom release %q locally: %w", from, err)
+	}
+	defer func() {
+		_ = fBuf.Close()
+	}()
+	if _, err := io.Copy(fBuf, rsp.Body); err != nil {
+		return "", fmt.Errorf("cannot buffer custom release %q locally to %q: %w", from, fBuf.Name(), err)
+	}
+	if _, err := fBuf.Seek(0, io.SeekStart); err != nil {
+		return "", fmt.Errorf("cannot read buffer (%q) of custom release %q: %w", fBuf.Name(), from, err)
+	}
+
+	logger.Info("extracting custom release, this could take a few minutes...")
+
+	target, err := filepath.Abs(customReleaseTarget())
+	if err != nil {
+		return "", fmt.Errorf("cannot place custom release %q: %w", from, err)
+	}
+
+	executableName := customReleaseExecutable()
+	executable, err := filepath.Abs(filepath.Join(target, executableName))
+	if err != nil {
+		return "", fmt.Errorf("cannot use executable of custom release %q: %w", from, err)
+	}
+	executableFound := false
+
+	format, stream, err := archives.Identify(background, fBuf.Name(), fBuf)
+	if err != nil {
+		return "", fmt.Errorf("cannot identifiy type of buffered (at %q) custom release %q: %w", fBuf.Name(), from, err)
+	}
+	if ex, ok := format.(archives.Extractor); ok {
+		if err := os.RemoveAll(target); err != nil {
+			return "", fmt.Errorf("cannot prepare custom release target %q: %w", target, err)
+		}
+		if err := ex.Extract(background, stream, func(ctx context.Context, in archives.FileInfo) error {
+			if in.IsDir() {
+				return nil
+			}
+
+			fIn, err := in.Open()
+			if err != nil {
+				return err
+			}
+			defer func() {
+				_ = fIn.Close()
+			}()
+
+			fInStat, err := fIn.Stat()
+			if err != nil {
+				return err
+			}
+
+			base, fName := path.Split(in.NameInArchive)
+			if !strings.HasPrefix(base, "duplicati-") {
+				return fmt.Errorf("does not comply with expected format")
+			}
+
+			targetFn := filepath.Join(target, fName)
+			_ = os.MkdirAll(filepath.Dir(targetFn), 0755)
+			if targetFn == executable {
+				executableFound = true
+			}
+
+			fOut, err := os.OpenFile(targetFn, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, fInStat.Mode())
+			if err != nil {
+				return err
+			}
+			defer func() {
+				_ = fOut.Close()
+			}()
+
+			if _, err := io.Copy(fOut, fIn); err != nil {
+				return err
+			}
+
+			logger.With("file", targetFn).
+				With("size", in.Size()).
+				Debug("file of custom release extracted")
+
+			return nil
+		}); err != nil {
+			return "", fmt.Errorf("cannot extract custom release %q: %w", from, err)
+		}
+	} else {
+		return "", fmt.Errorf("custom release %q does not comply with expected format", from)
+	}
+
+	if !executableFound {
+		return "", fmt.Errorf("custom release %q does not contain %q", from, executableName)
+	}
+
+	logger.Info("custom release downloaded and extracted")
+
+	return executable, nil
+}
+
+func customReleaseTarget() string {
+	if v := os.Getenv(customReleaseTargetEnvVar); v != "" {
+		return v
+	}
+	return customReleaseTargetDefault
+}
+
+func customReleaseExecutable() string {
+	if v := os.Getenv(customReleaseExecutableEnvVar); v != "" {
+		return v
+	}
+	return customReleaseExecutableDefault
 }
 
 type process struct {

@@ -23,6 +23,7 @@ options:
   log_level: Information
   wrapper_log_level: Info
 schema:
+  custom_release: url?
   log_level: list(Error|Warning|Information|Verbose|Profiling)
   wrapper_log_level: list(Fatal|Error|Warn|Info|Debug|Trace)
 arch:
