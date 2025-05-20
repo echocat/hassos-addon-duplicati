@@ -8,7 +8,6 @@ import (
 	"net/http"
 	"os"
 	"os/exec"
-	"path"
 	"path/filepath"
 	"strings"
 	"syscall"
@@ -139,7 +138,8 @@ func downloadCustomProcess(from string) (string, error) {
 				return err
 			}
 
-			base, fName := path.Split(in.NameInArchive)
+			i := strings.IndexByte(in.NameInArchive, '/')
+			base, fName := in.NameInArchive[:i+1], in.NameInArchive[i+1:]
 			if !strings.HasPrefix(base, "duplicati-") {
 				return fmt.Errorf("does not comply with expected format")
 			}
