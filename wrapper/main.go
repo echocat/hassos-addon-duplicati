@@ -5,22 +5,20 @@ import (
 	"os/signal"
 
 	"github.com/echocat/slf4g"
+	"github.com/echocat/slf4g/native"
 	_ "github.com/echocat/slf4g/native"
 	_ "github.com/echocat/slf4g/sdk/bridge/hook"
 )
 
 func main() {
 	var opts options
-	if err := opts.readFromDefaultFile(); err != nil {
+	if err := opts.readAllDefaults(); err != nil {
 		log.WithError(err).
 			Fatal()
 		os.Exit(21)
 	}
-	if err := opts.ensureSecretsFromDefaultFile(); err != nil {
-		log.WithError(err).
-			Fatal()
-		os.Exit(21)
-	}
+
+	native.DefaultProvider.SetLevel(opts.wrapperLogLevel.get())
 
 	w, err := newWrapper(opts)
 	if err != nil {

@@ -1,0 +1,24 @@
+configuration:
+  custom_release:
+    name: Custom Release URL
+    description: >- 
+      If this is value is provided, this URL will be downloaded and its ZIP content will be used
+      instead of the build-in one. Usually this is not required and is only used in scenarios
+      where a hotfix of duplicati should be used, before this plugin is updated or for debug
+      purposes. This URL as to be a full qualified one targeting a full release of Duplicati, like
+      https://github.com/duplicati/duplicati/releases/download/v2.1.0.5_stable_2025-03-04/duplicati-2.1.0.5_stable_2025-03-04-linux-x64-gui.zip
+  gui:
+    name: GUI
+    description: >-
+      Defines which version of the GUI should be used.
+      "ngax" is the older version,
+      "ngclient" is the newsest one (currently in beta).
+  log_level:
+    name: Log level
+    description: >- 
+      The log level where Duplicati itself will log its events on.
+  wrapper_log_level:
+    name: Wrapper's log level
+    description: >- 
+      Level where the wrapper which controls Duplicati will log its events on.
+      If set to Debug also each request sent to this addons will be logged.

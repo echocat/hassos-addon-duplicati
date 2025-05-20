@@ -89,7 +89,7 @@ func (srv *server) handleWrapper(ow http.ResponseWriter, r *http.Request) {
 			With("remote", r.RemoteAddr).
 			With("duration", time.Now().Sub(started).Truncate(time.Millisecond)).
 			With("status", rw.status).
-			Info("request")
+			Debug("request")
 	}()
 	if r.URL == nil {
 		http.Error(rw, "Bad Request", http.StatusBadRequest)
@@ -100,10 +100,24 @@ func (srv *server) handleWrapper(ow http.ResponseWriter, r *http.Request) {
 
 func (srv *server) handle(rw http.ResponseWriter, r *http.Request) {
 	switch r.URL.Path {
+	case "/", "", "/index.html":
+		srv.handlerIndex(rw, r)
 	case "/api/v1/auth/refresh":
 		srv.handlerAuthRefresh(rw, r)
 	default:
 		srv.reverseProxy.ServeHTTP(rw, r)
+	}
+}
+
+func (srv *server) handlerIndex(rw http.ResponseWriter, r *http.Request) {
+	switch r.Method {
+	case "GET", "HEAD":
+		ingressPath := r.Header.Get("X-Ingress-Path")
+		ingressPath = strings.TrimSuffix(ingressPath, "/")
+		rw.Header().Set("Location", ingressPath+srv.options.gui.initPath())
+		rw.WriteHeader(http.StatusTemporaryRedirect)
+	default:
+		http.Error(rw, "Bad Request", http.StatusMethodNotAllowed)
 	}
 }
 
@@ -121,18 +135,6 @@ func (srv *server) rewriteProxyRequest(pr *httputil.ProxyRequest) {
 	pr.SetXForwarded()
 	pr.Out.Host = pr.In.Host
 	pr.Out.Header.Set("Authorization", "PreAuth "+srv.options.webservicePreAuthTokens)
-
-	// if pr.Out.URL != nil && pr.Out.URL.Path == "/foo/bar" {
-	// 	pr.Out.URL.Path = "/"
-	// } else if pr.Out.URL != nil && strings.HasPrefix(pr.Out.URL.Path, "/foo/bar/") {
-	// 	pr.Out.URL.Path = strings.TrimPrefix(pr.Out.URL.Path, "/foo/bar")
-	// }
-	//
-	// if pr.Out.RequestURI == "/foo/bar" {
-	// 	pr.Out.RequestURI = "/"
-	// } else if strings.HasPrefix(pr.Out.RequestURI, "/foo/bar/") {
-	// 	pr.Out.RequestURI = strings.TrimPrefix(pr.Out.RequestURI, "/foo/bar")
-	// }
 }
 
 func (srv *server) handleProxyError(rw http.ResponseWriter, _ *http.Request, err error) {
