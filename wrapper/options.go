@@ -37,7 +37,7 @@ type options struct {
 }
 
 type optionsPayload struct {
-	Gui             options                `json:"gui,omitempty"`
+	Gui             optionsGui             `json:"gui,omitempty"`
 	CustomRelease   string                 `json:"custom_release,omitempty"`
 	LogLevel        optionsLogLevel        `json:"log_level,omitempty"`
 	WrapperLogLevel optionsWrapperLogLevel `json:"wrapper_log_level,omitempty"`
