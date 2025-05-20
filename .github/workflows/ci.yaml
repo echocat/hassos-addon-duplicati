@@ -29,6 +29,10 @@ jobs:
   resolve:
     runs-on: ubuntu-latest
     name: "Resolve"
+    permissions:
+      contents: read
+      pull-requests: read
+      packages: read
     outputs:
       registry: ${{ steps.refs.outputs.registry }}
       image: ${{ steps.refs.outputs.image }}
@@ -66,7 +70,6 @@ jobs:
       pull-requests: read
       contents: read
       packages: write
-
     steps:
       - name: Check out repository
         uses: actions/checkout@v4
@@ -137,6 +140,10 @@ jobs:
   merge:
     name: "Merge"
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: read
+      packages: write
     needs:
       - resolve
       - build
@@ -224,7 +231,7 @@ jobs:
           if ! grep -q '[^[:space:]]' "${target}/CHANGELOG.md"; then
             rm -f "${target}/CHANGELOG.md"
           fi
-          cp -R "${source}/config/*" "${target}/"
+          cp -R ${source}/config/* ${target}/
           sed -i -E "s/^(version: ).+$/\1${refEscaped}/" "${target}/config.yaml"
           if grep -q '^image: ' "${target}/config.yaml"; then
             sed -i -E "s/^(image: ).+$/\1${imageEscaped}/" "${target}/config.yaml"
