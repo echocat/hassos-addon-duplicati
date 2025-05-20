@@ -5,6 +5,7 @@ import (
 	"os/signal"
 
 	"github.com/echocat/slf4g"
+	"github.com/echocat/slf4g/native"
 	_ "github.com/echocat/slf4g/native"
 	_ "github.com/echocat/slf4g/sdk/bridge/hook"
 )
@@ -16,6 +17,8 @@ func main() {
 			Fatal()
 		os.Exit(21)
 	}
+
+	native.DefaultProvider.SetLevel(opts.wrapperLogLevel.get())
 
 	w, err := newWrapper(opts)
 	if err != nil {
