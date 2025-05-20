@@ -215,15 +215,23 @@ jobs:
 
           source=$GITHUB_WORKSPACE/this
           target=$GITHUB_WORKSPACE/hassos-addons/${PROJECT}
-          rm -rf "${target}"
-          cp -R "${source}/config/" "${target}/"
           ref=$(echo "${{ github.ref_name }}" | sed -E "s/^v([0-9]+(\.[0-9]+)*)(-.+)?$/\1/")
           refEscaped=$(echo "$ref" | sed -E 's/\\/\\\\/' | sed -E 's/\//\\\//')
+          image="${{ needs.resolve.outputs.image }}"
+          imageEscaped=$(echo "$image" | sed -E 's/\\/\\\\/' | sed -E 's/\//\\\//')
+
+          rm -rf "${target}"
+          mkdir -p "${target}/"
+          echo "${{ github.event.release.body }}" > "${target}/CHANGELOG.md"
+          if ! grep -q '[^[:space:]]' "${target}/CHANGELOG.md"; then
+            rm -f "${target}/CHANGELOG.md"
+          fi
+          cp -R "${source}/config/" "${target}/"
           sed -i -E "s/^(version: ).+$/\1${refEscaped}/" "${target}/config.yaml"
           if grep -q '^image: ' "${target}/config.yaml"; then
-            sed -i -E "s/^(image: ).+$/\1ghcr.io/echocat/hassos-addon-duplicati/" "${target}/config.yaml"
+            sed -i -E "s/^(image: ).+$/\1${imageEscaped}/" "${target}/config.yaml"
           else
-            echo "image: ghcr.io/echocat/hassos-addon-duplicati" >> "${target}/config.yaml"
+            echo "image: ${image}" >> "${target}/config.yaml"
           fi
           
           git add -A "${target}"

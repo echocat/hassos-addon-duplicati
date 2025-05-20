@@ -11,12 +11,7 @@ import (
 
 func main() {
 	var opts options
-	if err := opts.readFromDefaultFile(); err != nil {
-		log.WithError(err).
-			Fatal()
-		os.Exit(21)
-	}
-	if err := opts.ensureSecretsFromDefaultFile(); err != nil {
+	if err := opts.readAllDefaults(); err != nil {
 		log.WithError(err).
 			Fatal()
 		os.Exit(21)

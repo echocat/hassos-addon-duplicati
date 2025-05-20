@@ -6,7 +6,6 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
-	"strconv"
 	"syscall"
 
 	log "github.com/echocat/slf4g"
@@ -24,11 +23,17 @@ func newProcess(opts options) (result *process, err error) {
 	}
 
 	executable := processExecutable()
-	args := opts.properties.
-		with("webservice-port", strconv.Itoa(processPort)).
-		toArguments()
-
-	result.cmd = exec.Command(executable, args...)
+	result.cmd = exec.Command(executable,
+		"--webservice-disable-https=True",
+		"--log-file=/dev/stdout",
+		"--webservice-interface=any",
+		"--webservice-allowed-hostnames=*",
+		"--server-datafolder=/data",
+		"--require-db-encryption-key=True",
+		fmt.Sprintf("--webservice-timezone=%s", opts.timezone),
+		fmt.Sprintf("--log-level=%v", opts.logLevel),
+		fmt.Sprintf("--webservice-port=%d", processPort),
+	)
 	result.cmd.Env = []string{
 		"PATH=" + filepath.Dir(executable) + ":" + os.Getenv("PATH"),
 		"DUPLICATI__WEBSERVICE_PASSWORD=" + opts.webservicePassword,

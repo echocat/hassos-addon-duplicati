@@ -4,19 +4,30 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"net/http"
 	"os"
 	"path/filepath"
+	"strings"
+	"time"
+
+	"github.com/echocat/slf4g/level"
+	"github.com/echocat/slf4g/native"
 )
 
 const (
-	optionsFileDefault = "/data/options.json"
-	optionsFileEnvVar  = "OPTIONS_FILE"
-	secretsFileDefault = "/data/secrets.json"
-	secretsFileEnvVar  = "SECRETS_FILE"
+	optionsFileDefault    = "/data/options.json"
+	optionsFileEnvVar     = "OPTIONS_FILE"
+	secretsFileDefault    = "/data/secrets.json"
+	secretsFileEnvVar     = "SECRETS_FILE"
+	haInfoUrlDefault      = "http://supervisor/info"
+	haInfoUrlEnvVar       = "HA_INFO_URL"
+	supervisorTokenEnvVar = "SUPERVISOR_TOKEN"
 )
 
 type options struct {
-	properties properties
+	logLevel        optionsLogLevel
+	wrapperLogLevel optionsWrapperLogLevel
+	timezone        string
 
 	webservicePassword      string
 	webservicePreAuthTokens string
@@ -24,7 +35,8 @@ type options struct {
 }
 
 type optionsPayload struct {
-	Properties map[string]any `json:"properties"`
+	LogLevel        optionsLogLevel        `json:"log_level,omitempty"`
+	WrapperLogLevel optionsWrapperLogLevel `json:"wrapper_log_level,omitempty"`
 }
 
 type secretsPayload struct {
@@ -33,12 +45,17 @@ type secretsPayload struct {
 	SettingsEncryptionKey   string `json:"settingsEncryptionKey"`
 }
 
+type haInfoPayload struct {
+	Data haInfoPayloadData `json:"data"`
+}
+
+type haInfoPayloadData struct {
+	Timezone string `json:"timezone"`
+}
+
 func (opt *options) set(payload optionsPayload) error {
-	readProperties := properties{}
-	if err := readProperties.setMap(payload.Properties); err != nil {
-		return fmt.Errorf("could decode properties: %v", err)
-	}
-	opt.properties = readProperties.merge(defaultProperties)
+	opt.logLevel = payload.LogLevel
+	opt.wrapperLogLevel = payload.WrapperLogLevel
 	return nil
 }
 
@@ -54,6 +71,16 @@ func (opt *options) getSecrets() (result secretsPayload) {
 	result.WebservicePreAuthTokens = opt.webservicePreAuthTokens
 	result.SettingsEncryptionKey = opt.settingsEncryptionKey
 	return result
+}
+
+func (opt *options) setHaInfo(payload haInfoPayload) error {
+	opt.timezone = payload.Data.Timezone
+	if opt.timezone == "" {
+		opt.timezone = "Etc/UTC"
+	} else if _, err := time.LoadLocation(opt.timezone); err != nil {
+		opt.timezone = "Etc/UTC"
+	}
+	return nil
 }
 
 func (opt *options) readFrom(r io.Reader) error {
@@ -80,6 +107,19 @@ func (opt *options) readFromFile(fn string) error {
 	}(f)
 	if err := opt.readFrom(f); err != nil {
 		return fmt.Errorf("could not read options file %q: %w", fn, err)
+	}
+	return nil
+}
+
+func (opt *options) readAllDefaults() error {
+	if err := opt.readFromDefaultFile(); err != nil {
+		return err
+	}
+	if err := opt.ensureSecretsFromDefaultFile(); err != nil {
+		return err
+	}
+	if err := opt.readHaInfoFromDefaultUrl(); err != nil {
+		return err
 	}
 	return nil
 }
@@ -187,4 +227,113 @@ func (opt *options) defaultSecretsFile() string {
 		return v
 	}
 	return secretsFileDefault
+}
+
+func (opt *options) readHaInfoFrom(r io.Reader) error {
+	dec := json.NewDecoder(r)
+	var buf haInfoPayload
+	if err := dec.Decode(&buf); err != nil {
+		return fmt.Errorf("could not decode home assisstant info: %w", err)
+	}
+
+	if err := opt.setHaInfo(buf); err != nil {
+		return fmt.Errorf("could not decode home assisstant info: %w", err)
+	}
+
+	return nil
+}
+
+func (opt *options) readHaInfoFile(url, accessToken string) error {
+	req, err := http.NewRequest(http.MethodGet, url, nil)
+	if err != nil {
+		return fmt.Errorf("could not create request for home assistant info %q: %w", url, err)
+	}
+	if accessToken != "" {
+		req.Header.Set("Authorization", "Bearer "+accessToken)
+	}
+
+	rsp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		return fmt.Errorf("could not execute request to home assistant info %q: %w", url, err)
+	}
+	defer func() {
+		_ = rsp.Body.Close()
+	}()
+	if rsp.StatusCode != http.StatusOK {
+		return fmt.Errorf("could not execute request to home assistant info %q: got %d - %s", url, rsp.StatusCode, rsp.Status)
+	}
+
+	if err := opt.readHaInfoFrom(rsp.Body); err != nil {
+		return fmt.Errorf("could not parse response of home assistant info %q: %v", url, err)
+	}
+
+	return nil
+}
+
+func (opt *options) readHaInfoFromDefaultUrl() error {
+	return opt.readHaInfoFile(opt.defaultHaInfoUrl(), os.Getenv(supervisorTokenEnvVar))
+}
+
+func (opt *options) defaultHaInfoUrl() string {
+	if v := os.Getenv(haInfoUrlEnvVar); v != "" {
+		return v
+	}
+	return haInfoUrlDefault
+}
+
+type optionsLogLevel string
+
+func (ol *optionsLogLevel) UnmarshalText(text []byte) error {
+	*ol = optionsLogLevel(optionsLogLevel(text).String())
+	return nil
+}
+
+func (ol optionsLogLevel) MarshalText() ([]byte, error) {
+	return []byte(ol.String()), nil
+}
+
+func (ol optionsLogLevel) String() string {
+	switch strings.ToLower(string(ol)) {
+	case "error":
+		return "Error"
+	case "warning", "warn":
+		return "Warning"
+	case "verbose", "debug":
+		return "Verbose"
+	case "profiling", "trace":
+		return "Profiling"
+	default:
+		return "Information"
+	}
+}
+
+type optionsWrapperLogLevel level.Level
+
+func (ol *optionsWrapperLogLevel) UnmarshalText(text []byte) error {
+	v, err := native.DefaultProvider.GetLevelNames().ToLevel(string(text))
+	if err != nil {
+		return err
+	}
+	*ol = optionsWrapperLogLevel(v)
+	return nil
+}
+
+func (ol optionsWrapperLogLevel) MarshalText() ([]byte, error) {
+	v, err := native.DefaultProvider.GetLevelNames().ToName(level.Level(ol))
+	if err != nil {
+		return nil, err
+	}
+	return []byte(v), nil
+}
+
+func (ol optionsWrapperLogLevel) String() string {
+	text, err := ol.MarshalText()
+	if err != nil {
+		return fmt.Sprintf("ERR-%v", err)
+	}
+	return string(text)
+}
+
+func (ol optionsWrapperLogLevel) get() level.Level {
+	return level.Level(ol)
 }
