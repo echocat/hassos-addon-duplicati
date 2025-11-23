@@ -44,7 +44,7 @@ jobs:
       duplicatRelease: ${{ steps.refs.outputs.duplicatRelease }}
     steps:
       - name: Check out repository
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
 
       - name: Install Go
         uses: actions/setup-go@v6
@@ -72,7 +72,7 @@ jobs:
       packages: write
     steps:
       - name: Check out repository
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
 
       - name: Install Go
         uses: actions/setup-go@v6
@@ -199,12 +199,12 @@ jobs:
     if: ${{ github.event_name == 'release' }}
     steps:
       - name: Check out this repository
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
         with:
           path: this
 
       - name: Check out hassos-addons repository
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
         with:
           repository: echocat/hassos-addons
           path: hassos-addons
