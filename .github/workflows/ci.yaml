@@ -130,7 +130,7 @@ jobs:
 
       - name: Upload image digest
         if: needs.resolve.outputs.push == 'true'
-        uses: actions/upload-artifact@v5
+        uses: actions/upload-artifact@v6
         with:
           name: digests-${{ steps.refs.outputs.platformToken }}
           path: "${{ runner.temp }}/digests/*"
