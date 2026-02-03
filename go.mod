@@ -4,7 +4,7 @@ go 1.24.3
 
 require (
 	github.com/echocat/slf4g v1.8.3
-	github.com/echocat/slf4g/native v1.8.3
+	github.com/echocat/slf4g/native v1.8.4
 	github.com/google/go-github/v65 v65.0.0
 	github.com/mholt/archives v0.1.5
 	github.com/tdewolff/minify/v2 v2.24.8
