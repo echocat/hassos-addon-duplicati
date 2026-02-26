@@ -150,7 +150,7 @@ jobs:
     if: needs.resolve.outputs.push == 'true'
     steps:
       - name: Download image digests
-        uses: actions/download-artifact@v7
+        uses: actions/download-artifact@v8
         with:
           path: "${{ runner.temp }}/digests"
           pattern: digests-*
