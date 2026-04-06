@@ -7,7 +7,7 @@ require (
 	github.com/echocat/slf4g/native v1.8.4
 	github.com/google/go-github/v65 v65.0.0
 	github.com/mholt/archives v0.1.5
-	github.com/tdewolff/minify/v2 v2.24.11
+	github.com/tdewolff/minify/v2 v2.24.12
 	gopkg.in/yaml.v3 v3.0.1
 )
 
